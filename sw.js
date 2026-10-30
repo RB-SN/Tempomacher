@@ -1,6 +1,6 @@
 /* Tempomacher service worker: network first, cache as offline fallback.
    New versions pushed to GitHub are picked up on the next online visit. */
-const CACHE = 'tempomacher-v1.4.0';
+const CACHE = 'tempomacher-v1.5.0';
 const CORE = ['./', './index.html', './manifest.webmanifest', './manifest-en.webmanifest', './icons/apple-touch-icon.png', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {

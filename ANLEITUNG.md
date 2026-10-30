@@ -2,7 +2,12 @@
 
 ## Start
 
-1. Seite öffnen und **Neues Konto** wählen: Name und Passwort (mind. 4 Zeichen). Das Passwort gilt nur auf diesem Gerät und lässt sich nicht wiederherstellen.
+0. Oben auf der Anmeldeseite wählst du die Sprache: **DE** oder **EN**. Später lässt sie sich unter **Profil → Sprache** ändern. Auf Englisch heisst die App «Pacemaker».
+1. Seite öffnen und **Neues Konto** wählen.
+   - **Mit Online-Speicher** (falls eingerichtet): Benutzername (ohne Leerzeichen) und Passwort (mind. 8 Zeichen). Damit meldest du dich auf Handy und Laptop mit demselben Profil an. Ist der Name vergeben, schlägt die App freie Namen vor.
+   - **Ohne Online-Speicher:** Name und Passwort (mind. 4 Zeichen); das Profil bleibt auf diesem Gerät.
+   - Das Passwort lässt sich in beiden Fällen nicht zurücksetzen.
+   - Ein bestehendes Profil nimmst du unter **Profil → Konto & Geräte → Auf allen Geräten nutzen** mit.
 2. Das Einrichten hat 6 Schritte:
    - Alter und Geschlecht.
    - Lauferfahrung, Maximal- und Ruhepuls (optional).
@@ -38,6 +43,7 @@
 3. **Erfassen** oder **Importieren:**
    - *Von Hand:* Art des Laufs, Distanz, Dauer, Pace, Puls, Höhenmeter und Anstrengung (1–10). Bei Intervallen Pace und Puls nur der Belastungsphasen eintragen.
    - *Import:* FIT-, GPX- oder TCX-Datei bzw. die ZIP-Datei aus Garmin Connect wählen. Intervalle, Höhenmeter, Dauer und Decoupling werden automatisch erkannt. Du ergänzt nur die Anstrengung.
+   - *Screenshot hochladen:* öffnet auf dem Handy direkt die Fotos/Galerie. Bildschirmfotos der Aktivität wählen, am besten die Übersicht und bei Intervallen zusätzlich die Runden/Splits (mehrere Bilder auf einmal). Die App liest Datum, Distanz, Zeit, Pace, Puls und Anstieg aus den Bildern. Die Werte vor dem Speichern kurz prüfen, die Texterkennung kann sich bei einzelnen Ziffern irren. Beim ersten Mal braucht es eine Internetverbindung, um die Texterkennung zu laden.
 4. Konntest du nicht trainieren, tippe auf **Nicht durchgeführt** und wähle optional den Grund.
 
 Ein erfasstes Training änderst du mit dem **Stift** und löschst es mit dem **Papierkorb**.
@@ -64,6 +70,10 @@ Unter **Profil → Erinnerung am Vorabend** lädst du eine Kalenderdatei für di
 
 Unter **Profil → Bestleistungen → + Neu** trägst du Distanz, Zeit, Datum und Anlass ein. Ein Tipp auf eine Distanz zeigt alle Zeiten, die sich dort bearbeiten lassen. Eine aktuelle Bestzeit kann als Referenz für die Trainingszonen dienen.
 
+## Als App auf dem Startbildschirm
+
+Im Browser «Zum Home-Bildschirm» (iPhone) bzw. «App installieren» (Android) wählen. Das Icon zeigt die zwei Pfeile. Steht dort noch ein altes Bild, die App entfernen und neu hinzufügen.
+
 ## Daten
 
-Alle Daten liegen im Browser des Geräts. Wenn du Browserdaten löschst, den privaten Modus nutzt oder das Gerät wechselst, sind sie dort nicht vorhanden.
+Profile ohne Online-Speicher liegen nur im Browser des Geräts. Wenn du Browserdaten löschst, den privaten Modus nutzt oder das Gerät wechselst, sind sie dort nicht vorhanden. Profile mit Online-Speicher sind zusätzlich verschlüsselt online gesichert und nach der Anmeldung auf jedem Gerät verfügbar.

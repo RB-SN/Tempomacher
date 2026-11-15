@@ -1,0 +1,37 @@
+// ---- analyses for the curious: intensity distribution, monotony & strain, pace at heart rate ----
+function zoneSplit(l){const m=logDur(l);if(!m)return null;const ty=logType(l),c=ctxFor(S),iv=l.impSum&&l.impSum.iv;
+  const hard=['vo2','hills','cruise','fartlek','tempo','rp','mptest','test','race'],mod=['mpace'];
+  if(iv&&iv.wt){const w=Math.min(m,iv.wt/60),cls=ty==='mpace'||(ty==='rp'&&mainRace(S)&&mainRace(S).dist>25)?'m':'h';return{e:m-w,m:cls==='m'?w:0,h:cls==='h'?w:0}}
+  if(l.hr&&!isIv(l)){const z=['Z1','Z2','Z3','Z4','Z5'].find(k=>l.hr<=c.zones[k].hr[1])||'Z5';if(ty==='race'||ty==='test')return{e:0,m:z==='Z3'?m:0,h:z==='Z3'?0:m};
+    if(!hard.includes(ty)&&!mod.includes(ty))return z<='Z2'?{e:m,m:0,h:0}:z==='Z3'?{e:m*.5,m:m*.5,h:0}:{e:m*.4,m:0,h:m*.6}}
+  if(ty==='race'||ty==='test')return{e:0,m:0,h:m};if(hard.includes(ty))return{e:m*.55,m:0,h:m*.45};if(mod.includes(ty))return{e:m*.45,m:m*.55,h:0};return{e:m,m:0,h:0}}
+function nerdCard(){const t=today(),c=ctxFor(S),runs=allRuns().filter(l=>l.done&&!isAlt(l));if(runs.length<6)return'';
+  const wk=[...Array(8)].map((_,i)=>addD(monday(t),-7*(7-i)));
+  const Z=wk.map(m=>{const z={e:0,m:0,h:0};runs.filter(l=>l.date>=m&&l.date<=addD(m,6)).forEach(l=>{const q=zoneSplit(l);if(q){z.e+=q.e;z.m+=q.m;z.h+=q.h}});return{wkd:m,...z,tot:z.e+z.m+z.h}});
+  const last4=Z.slice(-4).reduce((a,z)=>({e:a.e+z.e,m:a.m+z.m,h:a.h+z.h}),{e:0,m:0,h:0}),tot4=last4.e+last4.m+last4.h||1,pe=last4.e/tot4*100,pm=last4.m/tot4*100,ph=last4.h/tot4*100;
+  const mx=Math.max(...Z.map(z=>z.tot))||1,W0=400,H0=150,L=8,B=22,bw=(W0-L*2)/8;
+  const bars=Z.map((z,i)=>{const x=L+i*bw+bw*.18,w=bw*.64,hS=v=>(H0-B-8)*v/mx;let y=H0-B;return[['e','var(--z2)'],['m','var(--z3)'],['h','var(--z4)']].map(([k,col])=>{const h=hS(z[k]);y-=h;return h>.5?`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" fill="${col}" rx="2"/>`:''}).join('')+`<text x="${(x+w/2).toFixed(1)}" y="${H0-6}" text-anchor="middle">${fshort(z.wkd).replace(/\.$/,'')}</text>`}).join('');
+  const verdict=pe>=75?T('gut verteilt: genug locker, damit die harten Einheiten wirken.','well balanced: enough easy running for the hard sessions to work.'):pe>=65?T('etwas viel im mittleren und harten Bereich. Lockere Läufe bewusst ruhiger laufen.','a bit much in the moderate and hard range. Run easy days deliberately slower.'):T('zu wenig locker: Verletzungs- und Übertrainingsrisiko. Lockere Tage wirklich locker laufen.','too little easy running: risk of injury and overtraining. Keep easy days truly easy.');
+  // monotony & strain (Foster): daily load mean / sd over the week
+  const mono=wk.slice(-4).map(m=>{const d=[...Array(7)].map((_,i)=>runs.filter(l=>l.date===addD(m,i)).reduce((a,l)=>a+loadPts(logDur(l),l.rpe||mid2(RPE[logType(l)]||[3,5])),0)),mu=avg(d),sd=Math.sqrt(avg(d.map(x=>(x-mu)**2)))||1,mo=mu/sd;return{m,load:Math.round(mu*7),mo,strain:Math.round(mu*7*mo)}});
+  // pace at the same heart rate: recent 6 weeks vs the 6 weeks before
+  const pts=runs.filter(l=>!isIv(l)&&l.hr&&gapOf(l)&&l.date>=addD(t,-84)&&['easy','long','recovery','free','fun'].includes(logType(l))).map(l=>({x:l.hr,y:gapOf(l),r:l.date>=addD(t,-42)}));
+  let ph2='';const fit=a=>{if(a.length<3)return null;const mx_=avg(a.map(p=>p.x)),my=avg(a.map(p=>p.y)),sxx=a.reduce((s,p)=>s+(p.x-mx_)**2,0);if(sxx<4)return null;const b=a.reduce((s,p)=>s+(p.x-mx_)*(p.y-my),0)/sxx;return h=>my+b*(h-mx_)};
+  const fN=fit(pts.filter(p=>p.r)),fO=fit(pts.filter(p=>!p.r));
+  if(pts.length>=5){const hx=Math.round(avg(pts.map(p=>p.x))),xs=pts.map(p=>p.x),ys=pts.map(p=>p.y),x0=Math.min(...xs)-3,x1=Math.max(...xs)+3,y0=Math.min(...ys)-10,y1=Math.max(...ys)+10,H1=170,Lx=38,Bx=24;
+    const X=v=>Lx+(W0-Lx-10)*(v-x0)/(x1-x0),Y=v=>10+(H1-10-Bx)*(v-y0)/(y1-y0);
+    const ln=(f,col,da)=>f?`<line x1="${X(x0)}" y1="${Y(f(x0))}" x2="${X(x1)}" y2="${Y(f(x1))}" stroke="${col}" stroke-width="2" ${da?'stroke-dasharray="4 4"':''}/>`:'';
+    const dd=fN&&fO?Math.round(fN(hx)-fO(hx)):null;
+    ph2=`<h3 style="margin-top:18px">${T('Pace bei gleichem Puls','Pace at the same heart rate')}</h3><p style="margin:4px 0 8px;font-size:15px">${fN?T(`Bei Puls ${hx}: <b>${pace(fN(hx))}</b>`,`At heart rate ${hx}: <b>${pace(fN(hx))}</b>`):''}${dd!=null?T(` (vor 6 Wochen ${pace(fO(hx))}, ${dd<0?'<b style="color:var(--good)">'+Math.abs(dd)+' s/km schneller</b>':dd>0?dd+' s/km langsamer':'gleich'}).`,` (6 weeks ago ${pace(fO(hx))}, ${dd<0?'<b style="color:var(--good)">'+Math.abs(dd)+' s/km faster</b>':dd>0?dd+' s/km slower':'same'}).`):'.'}</p>
+      <div class="chartw"><svg class="chart" viewBox="0 0 ${W0} ${H1}" role="img" aria-label="${T('Pace und Puls lockerer Läufe','Pace and heart rate of easy runs')}">${[y0+10,(y0+y1)/2,y1-10].map(v=>`<text x="${Lx-5}" y="${Y(v)+4}" text-anchor="end">${fmtPace(v)}</text>`).join('')}${[x0+3,Math.round((x0+x1)/2),x1-3].map(v=>`<text x="${X(v)}" y="${H1-6}" text-anchor="middle">${Math.round(v)}</text>`).join('')}
+      ${pts.map(p=>`<circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="4" fill="${p.r?'var(--blue)':'var(--muted)'}" opacity="${p.r?.85:.45}"/>`).join('')}${ln(fO,'var(--muted)',true)}${ln(fN,'var(--blue)',false)}</svg></div>
+      <div class="legend"><span><i class="sw" style="background:var(--blue);border-radius:50%"></i>${T('letzte 6 Wochen','last 6 weeks')}</span><span><i class="sw" style="background:var(--muted);border-radius:50%"></i>${T('6 Wochen davor','6 weeks before')}</span><span>${T('x: Puls · y: Pace (höhenbereinigt)','x: heart rate · y: pace (elevation-adjusted)')}</span></div>`}
+  return`<div class="card"><h3>${T('Intensitätsverteilung','Intensity distribution')}</h3>
+    <div class="ivd"><div style="--w:${pe}%;--c:var(--z2)"></div><div style="--w:${pm}%;--c:var(--z3)"></div><div style="--w:${ph}%;--c:var(--z4)"></div></div>
+    <p style="margin:6px 0 8px;font-size:15px">${T('Letzte 4 Wochen','Last 4 weeks')}: <b>${Math.round(pe)} %</b> ${T('locker','easy')} · ${Math.round(pm)} % ${T('mittel','moderate')} · ${Math.round(ph)} % ${T('hart','hard')}. ${T('Das ist','That is')} ${verdict}</p>
+    <div class="chartw"><svg class="chart" viewBox="0 0 ${W0} ${H0}" role="img" aria-label="${T('Minuten pro Woche nach Intensität','Minutes per week by intensity')}">${bars}</svg></div>
+    <div class="legend"><span><i class="sw" style="background:var(--z2)"></i>${T('locker (Z1–2)','easy (Z1–2)')}</span><span><i class="sw" style="background:var(--z3)"></i>${T('mittel (Z3)','moderate (Z3)')}</span><span><i class="sw" style="background:var(--z4)"></i>${T('hart (Z4–5)','hard (Z4–5)')}</span></div>
+    <h3 style="margin-top:18px">${T('Monotonie','Monotony')}</h3>
+    <div class="scroll-x"><table class="t" style="margin-top:6px"><thead><tr><th>${T('Woche','Week')}</th><th>${T('Belastung','Load')}</th><th>${T('Monotonie','Monotony')}</th></tr></thead><tbody>${mono.map(x=>`<tr><td>${fshort(x.m)}</td><td class="n">${thou(x.load)}</td><td class="n" style="${x.mo>2?'color:var(--bad);font-weight:800':''}">${fk(Math.round(x.mo*10)/10)}</td></tr>`).join('')}</tbody></table></div>
+    <p class="hint" style="margin:6px 0 0">${T('Monotonie = Ø Tagesbelastung ÷ Streuung (Foster). Über 2 heisst: jeder Tag ähnlich hart, zu wenig Wechsel zwischen hart und leicht. Das erhöht das Risiko für Infekte und Übertraining.','Monotony = mean daily load ÷ variation (Foster). Above 2 means every day similarly hard, too little hard–easy variation. That raises the risk of illness and overtraining.')}</p>
+    ${ph2}</div>`}

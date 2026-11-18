@@ -6,7 +6,7 @@
 const QTHR=['tempo','cruise','mpace'],QSPD=['vo2','rp'];
 function qualSamples(end){const from=addD(end,-28);
   return Object.entries(S.logs).map(([d,l])=>({...l,date:d})).filter(l=>l.done&&l.date>=from&&l.date<end&&l.s&&l.s.pct&&l.pace&&l.hr&&l.rpe&&logType(l)===rtOfPlan(l.s.type)&&[...QTHR,...QSPD].includes(logType(l))).map(l=>{
-    const ty=logType(l),E=RPE[ty]||[6,8],pv=isIv(l)?l.pace:gapOf(l),tp=l.s.pace,hi=l.s.hr?l.s.hr[1]:null;
+    const ty=logType(l),E=RPE[ty]||[6,8],pv=isIv(l)||isBlk(l)&&blkData(l)?l.pace:gapOf(l),tp=l.s.pace,hi=l.s.hr?l.s.hr[1]:null;
     const impl=vo2(60000/pv)/l.s.pct,hrOk=!hi||l.hr<=hi+3,rpeOk=l.rpe<=E[1],slow=tp&&pv>tp[1]*1.03,hard=l.rpe>E[1]+1||(hi&&l.hr>hi+5)||slow;
     return{ty,impl,hrOk,rpeOk,hard,thr:QTHR.includes(ty)}})}
 function evaluateWeek(mon,nw=2){
@@ -28,9 +28,11 @@ function evaluateWeek(mon,nw=2){
   if(warn)vf=Math.max(.7,vf-.12);else if(vf<1)vf=Math.min(1,vf+.04);
   // paces: evidence from at least 3 quality sessions with heart rate and RPE (last 4 weeks)
   const Q=qualSamples(end);let vdotDelta=0;
-  if(!S.profile.lab&&Q.length>=3){const ok=Q.filter(q=>q.hrOk&&q.rpeOk),up=ok.filter(q=>q.impl-vd>.5).length,dn=Q.filter(q=>q.hard).length;
+  if((!S.profile.lab||labOld(S.profile))&&Q.length>=3){const ok=Q.filter(q=>q.hrOk&&q.rpeOk),up=ok.filter(q=>q.impl-vd>.5).length,dn=Q.filter(q=>q.hard).length;
     if(!warn&&ok.length>=3&&up>=Math.ceil(Q.length*2/3)&&avg(ok.map(q=>q.impl))-vd>.8)vdotDelta=.5;
     else if(dn>=Math.ceil(Q.length*2/3)&&avg(Q.map(q=>q.impl))-vd<-1)vdotDelta=-.5}
+  // measured threshold (tempo blocks near threshold heart rate): the index learns from it, at most ±0.5 per review
+  const tS=warn?Math.min(0,thrVdotStep(end)):thrVdotStep(end);if(tS>0&&vdotDelta>=0)vdotDelta=Math.max(vdotDelta,tS);else if(tS<0&&vdotDelta<=0)vdotDelta=Math.min(vdotDelta,tS);const thrLearn=tS!==0&&vdotDelta===tS;
   // focus of the second quality session for the next two weeks
   const lr=done.filter(l=>l.dec!=null&&logKm(l)>=15).concat((S.extra||[]).filter(x=>x.done&&x.dec!=null&&x.date>=addD(end,-28)&&x.date<end&&logKm(x)>=15));
   const thrHard=Q.filter(q=>q.thr&&q.hard).length,spdHard=Q.filter(q=>!q.thr&&q.hard).length;
@@ -46,8 +48,9 @@ function evaluateWeek(mon,nw=2){
   if(sick)notes.push(T('Krankheitstage eingetragen: nach dem Gesundwerden langsam und locker wieder einsteigen.','Sick days logged: return slowly and easily once recovered.'));
   if(pain>0&&!sick)notes.push(strongPain||pain>=3?T('Schmerzen gemeldet: der Umfang wird zurückgenommen, damit sich der Körper erholen kann.','Pain reported: volume is reduced so your body can recover.'):T('Leichte Schmerzen gemeldet. Weiter beobachten.','Slight pain reported. Keep an eye on it.'));
   if(warn)notes.push(T('Die nächsten zwei Wochen weniger Umfang (−12 %), Intensität bleibt kontrolliert.','Less volume for the next two weeks (−12 %), intensity stays controlled.'));
-  if(vdotDelta>0)notes.push(T(`${Q.length} Qualitätseinheiten mit Puls und Anstrengung zeigen: Du bist schneller als die Vorgaben, bei passendem Puls. Die Trainingspaces werden um etwa 2 s/km schneller.`,`${Q.length} quality sessions with heart rate and effort show: you are faster than the targets at a fitting heart rate. Training paces get about 2 s/km faster.`));
-  else if(vdotDelta<0)notes.push(T('Mehrere Qualitätseinheiten waren zu hart (Puls, Anstrengung oder Tempo). Die Trainingspaces werden etwas langsamer.','Several quality sessions were too hard (heart rate, effort or pace). Training paces get a bit slower.'));
+  if(thrLearn)notes.push(vdotDelta>0?T(`Deine gemessene Schwelle liegt über mehrere Tempoeinheiten schneller als die Vorgabe: Der Leistungsindex steigt um ${vdotDelta.toFixed(1)}, Paces und Prognosen werden etwas schneller.`,`Your measured threshold has been faster than the target over several tempo sessions: the performance index rises by ${vdotDelta.toFixed(1)}, paces and predictions get a little faster.`):T('Deine gemessene Schwelle liegt über mehrere Tempoeinheiten langsamer als die Vorgabe: Der Leistungsindex sinkt um 0.5.','Your measured threshold has been slower than the target over several tempo sessions: the performance index drops by 0.5.'));
+  else if(vdotDelta>0)notes.push(T(`${Q.length} Qualitätseinheiten mit Puls und Anstrengung zeigen: Du bist schneller als die Vorgaben, bei passendem Puls. Die Trainingspaces werden um etwa 2 s/km schneller.`,`${Q.length} quality sessions with heart rate and effort show: you are faster than the targets at a fitting heart rate. Training paces get about 2 s/km faster.`));
+  else if(vdotDelta<0&&!thrLearn)notes.push(T('Mehrere Qualitätseinheiten waren zu hart (Puls, Anstrengung oder Tempo). Die Trainingspaces werden etwas langsamer.','Several quality sessions were too hard (heart rate, effort or pace). Training paces get a bit slower.'));
   else if(S.profile.lab)notes.push(T('Paces aus der Leistungsdiagnostik bleiben fix.','Paces from your lab test stay fixed.'));
   else if(Q.length<3)notes.push(T(`Paces bleiben: Für eine Anpassung braucht es mindestens 3 Qualitätseinheiten mit Pace, Puls und Anstrengung in 4 Wochen (bisher ${Q.length}).`,`Paces stay: an adjustment needs at least 3 quality sessions with pace, heart rate and effort within 4 weeks (so far ${Q.length}).`));
   else{const fastBad=Q.filter(q=>q.impl-vd>.5&&!(q.hrOk&&q.rpeOk)).length,hardN=Q.filter(q=>q.hard).length;

@@ -1,5 +1,13 @@
 # Versionsverlauf
 
+## 3.3.0 – November 2026
+
+- **Neue Kacheln in «Fortschritt»** (zwei Spalten, je Zahl + Vergleich + Mini-Grafik): Zielkurs, Schwelle, Wochenumfang, Effizienz, Frische, Konstanz. Prognosen und Bestzeiten stehen in den Details von «Zielkurs», die Intensität 80/20 bei «Frische», Serie und Meilensteine bei «Konstanz».
+- **Gemessene Schwelle:** aus Tempodauerläufen und Schwellenintervallen (Block-Pace und -Puls), umgerechnet auf deinen Schwellenpuls, Median der letzten 3, mit Trend und Vergleich zur Plan-Vorgabe. Vor der ersten Tempoeinheit zeigt die Kachel den längsten Lauf.
+- **Laktattest hat Vorrang** für Schwelle, Schwellenpuls und Leistungsindex; ist er älter als 4 Monate, zählen die Trainingswerte mehr und die App schlägt einen neuen Test vor.
+- **Leistungsindex lernt aus der Schwelle:** In der Zwei-Wochen-Auswertung höchstens +0.5 (also etwa 1 pro Monat), wenn mindestens 2 Einheiten nahe am Schwellenpuls schneller sind als die Vorgabe. Paces, Prognosen und Zielkurs passen sich an.
+- Tempoblöcke zählen in der Zwei-Wochen-Auswertung mit der Block-Pace (nicht mehr mit dem Schnitt des ganzen Laufs).
+
 ## 3.2.2 – November 2026
 
 - **Garmin-Screenshots mit Abschnitt-Filtern:** Die Ansichten «Warm up», «Laufen», «Erholung» und «Cool Down» der Garmin Connect App werden jetzt richtig zusammengesetzt, auch wenn die Texterkennung den gewählten Filter nicht lesen kann. Die Intervall-Zeile (z. B. «1 · 16:00.0 · 4.03 km») ersetzt ihre Kilometer-Runden; gescrollte Tabellen und ihre Summenzeile werden erkannt; «1711.7» wird als 17:11.7 gelesen; «8. 54 km» als 8.54 km.

@@ -74,7 +74,7 @@ function labZones(p){const L=p.lab;if(!L)return null;
 function baseVdot(p){const L=labZones(p);
   if(L&&L.Z4&&L.Z4.pace)return vo2(60000/mid2(L.Z4.pace))/.88;
   return p.ref&&p.ref.dist&&p.ref.sec?vdotFrom(p.ref.dist,p.ref.sec):estimateVdot(p)}
-const vdotOf=st=>clamp(baseVdot(st.profile)+(st.profile.lab?0:(st.adapt.vdotAdj||0)),20,85);
+const vdotOf=st=>clamp(baseVdot(st.profile)+(st.profile.lab&&!labOld(st.profile)?0:(st.adapt.vdotAdj||0)),20,85);
 const hrMax=p=>p.hrMax||Math.round(208-0.7*p.age);
 const hrRest=p=>p.hrRest||[70,66,61,57][p.exp];
 const ZONES={Z1:{n:'Regeneration',hr:[.60,.70]},Z2:{n:'Grundlage',hr:[.68,.79]},Z3:{n:'Marathon',hr:[.79,.86]},Z4:{n:'Schwelle',hr:[.86,.91]},Z5:{n:'VO₂max',hr:[.91,.97]}};
@@ -141,6 +141,8 @@ const IVT=new Set(['cruise','vo2','rp','fartlek','hills']);
 const rtOfPlan=t=>RTL[t]?t:'easy';
 const logType=l=>l.type||rtOfPlan(l.s&&l.s.type);
 const isIv=l=>IVT.has(logType(l));
+// tempo run and marathon-pace run: pace and heart rate describe the block, not the whole run
+const BLK=new Set(['tempo','mpace']),isBlk=l=>BLK.has(logType(l));
 const ELEV=[{l:'0–50',m:25},{l:'50–100',m:75},{l:'100–150',m:125},{l:'150–200',m:175},{l:'200–300',m:250},{l:'300–500',m:400},{l:'500+',m:650}];
 const RPEL=['','Sehr leicht','Leicht','Locker','Angenehm','Etwas fordernd','Fordernd','Hart','Sehr hart','Extrem hart','Maximal'];
 const EXPL=[['Keine','Ich fange gerade an'],['Wenig','Ab und zu, unter 1 Jahr'],['Viel','Regelmässig, 1–5 Jahre'],['Sehr viel','Jahrelang, mit Wettkämpfen']];
@@ -236,14 +238,14 @@ const W={
     return mk(c,{type:'hills',title:t,km:2.5+2*ws/(c.pc.T*1.15)+2,zone:'Z4',pace:null,interval:true,quality:true,reps,
       structure:[T('2.5 km einlaufen bis zum Hügel','2.5 km warm-up to the hill'),...st,T(`Puls gegen Ende der Anstiege ${Z} (hinkt nach, Tempo nach Gefühl)`,`Heart rate at the end of the climbs ${Z} (it lags; pace by feel)`),T('2 km auslaufen','2 km cool-down')],
       note:T('Kraft und Laufökonomie: aufrecht bleiben, kurze schnelle Schritte, Arme aktiv.','Strength and running economy: stay upright, short quick steps, active arms.')})},
-  tempo(c,j,short){const P=c.pc.T,m=Math.max(10,Math.min(short?Math.min(12+2*j,20):Math.min(18+3*j,c.exp>=2?35:25),Math.round(capK(c,.1,4)*P/60))),v=vix(c,'t')%4,Z=hz(c,'Z4');let st,ws=m*60,rs=0,t;
+  tempo(c,j,short){const P=c.pc.T,a=c.amb&&c.d>=5?c.amb:0,m=Math.max(10,a?Math.max(Math.min(short?Math.min(12+2*j,20):Math.min(18+3*j,35),Math.round(capK(c,.1,4)*P/60)),Math.min(Math.round((c.wkKm||0)*(short?.075:.09)*(a===2?1.1:1)*P/60),40)):Math.min(short?Math.min(12+2*j,20):Math.min(18+3*j,c.exp>=2?35:25),Math.round(capK(c,.1,4)*P/60))),v0=vix(c,'t')%4,v=v0===0&&m>25?(m>36?2:1):v0,Z=hz(c,'Z4');let st,ws=m*60,rs=0,t;
     if(v===0||m<16){t=short?T('Kurzer Tempolauf','Short tempo run'):T('Tempodauerlauf','Tempo run');st=[T(`${m} min am Stück im Schwellentempo ${pace(P)}`,`${m} min continuously at threshold pace ${pace(P)}`)]}
     else if(v===1){const h=Math.round(m/2);t=T('Tempolauf 2-teilig','Tempo run in two parts');st=[T(`2 × ${h} min im Schwellentempo ${pace(P)}`,`2 × ${h} min at threshold pace ${pace(P)}`),T('Trabpause 2 min','Jog recovery 2 min')];rs=120}
     else if(v===2){const h=Math.max(6,Math.round(m/3));t=T('Tempolauf 3-teilig','Tempo run in three parts');st=[T(`3 × ${h} min im Schwellentempo ${pace(P)}`,`3 × ${h} min at threshold pace ${pace(P)}`),T('Trabpause je 90 s','Jog recovery 90 s each')];rs=180}
     else{const h=Math.round(m/2);t=T('Progressiver Tempolauf','Progressive tempo run');st=[T(`${h} min in ${pace(P+8)}, dann ${m-h} min in ${pace(P)}`,`${h} min at ${pace(P+8)}, then ${m-h} min at ${pace(P)}`)]}
     return mk(c,{type:'tempo',title:t,km:2.5+ws/P+rs/c.pc.E[1]+2,zone:'Z4',pace:band(P),quality:true,track:true,
       structure:[T('2.5 km einlaufen','2.5 km warm-up'),...st,T(`Puls ${Z}; ab der Mitte prüfen`,`Heart rate ${Z}; check from halfway`),T('2 km auslaufen','2 km cool-down')],note:T('Kontrolliert hart: kurze Sätze gehen noch, ein Gespräch nicht mehr.','Controlled hard: short sentences still work, a conversation does not.')})},
-  cruise(c,j){const tot=Math.min(5+1.6*j,c.exp>=2?8:6.5,capK(c,.1,4)),v=vix(c,'c')%6,Z=hz(c,'Z4'),P=c.pc.T;let st,wk,rs,reps,t=T('Schwellenintervalle','Threshold intervals');
+  cruise(c,j){const a=c.amb&&c.d>=5?c.amb:0,tot=a?Math.max(Math.min(5+1.6*j,8,capK(c,.1,4)),Math.min((c.wkKm||0)*(a===2?.1:.09),a===2?10:9)):Math.min(5+1.6*j,c.exp>=2?8:6.5,capK(c,.1,4)),v=vix(c,'c')%6,Z=hz(c,'Z4'),P=c.pc.T;let st,wk,rs,reps,t=T('Schwellenintervalle','Threshold intervals');
     if(v===0){const n=Math.max(3,Math.round(tot/1.6));wk=n*1.6;rs=(n-1)*60;reps=n;st=[T(`${n} × 1.6 km im Schwellentempo ${pace(P)}`,`${n} × 1.6 km at threshold pace ${pace(P)}`),T('Trabpause je 60 s','Jog recovery 60 s each')]}
     else if(v===1){const n=Math.max(4,Math.round(tot));wk=n;rs=(n-1)*60;reps=n;st=[T(`${n} × 1000 m im Schwellentempo ${pace(P)}`,`${n} × 1000 m at threshold pace ${pace(P)}`),T('Trabpause je 60 s','Jog recovery 60 s each')]}
     else if(v===2){const n=Math.max(2,Math.round(tot/2));wk=n*2;rs=(n-1)*90;reps=n;st=[T(`${n} × 2 km im Schwellentempo ${pace(P)}`,`${n} × 2 km at threshold pace ${pace(P)}`),T('Trabpause je 90 s','Jog recovery 90 s each')]}
@@ -252,7 +254,7 @@ const W={
     else{const n=tot>=7.5?3:2;wk=n*3;rs=(n-1)*120;reps=n;st=[T(`${n} × 3 km im Schwellentempo ${pace(P)}`,`${n} × 3 km at threshold pace ${pace(P)}`),T('Trabpause je 2 min','Jog recovery 2 min each')]}
     return mk(c,{type:'cruise',title:t,km:2.5+wk+rs/c.pc.E[1]+2,zone:'Z4',pace:band(P),interval:true,quality:true,track:true,reps,
       structure:[T('2.5 km einlaufen','2.5 km warm-up'),...st,T(`Puls in den Belastungen ${Z}`,`Heart rate in the work phases ${Z}`),T('2 km auslaufen','2 km cool-down')],note:T('Gleichmässig: die letzte Wiederholung so schnell wie die erste.','Even: the last repetition as fast as the first.')})},
-  vo2(c,j){const tot=Math.min(4+.5*j,c.exp>=2?6:5,capK(c,.08,3)),V=c.exp>=1?[0,1,2,3,4,5]:[1,3,6],v=V[vix(c,'v')%V.length],Z=hz(c,'Z5'),P=c.pc.I;let st,wk,rs,reps,t=T('Intervalle','Intervals');
+  vo2(c,j){const a=c.amb&&c.d<=12?c.amb:0,tot=a?Math.max(Math.min(4+.5*j,6,capK(c,.08,3)),Math.min((c.wkKm||0)*(a===2?.08:.07),a===2?8:7)):Math.min(4+.5*j,c.exp>=2?6:5,capK(c,.08,3)),V=c.exp>=1?[0,1,2,3,4,5]:[1,3,6],v=V[vix(c,'v')%V.length],Z=hz(c,'Z5'),P=c.pc.I;let st,wk,rs,reps,t=T('Intervalle','Intervals');
     if(v===0){const n=Math.max(4,Math.round(tot));wk=n;rs=n*140;reps=n;st=[T(`${n} × 1000 m im Intervalltempo ${pace(P)}`,`${n} × 1000 m at interval pace ${pace(P)}`),T('Trabpause je 400 m (ca. 2:20 min)','Jog recovery 400 m each (about 2:20 min)')]}
     else if(v===1){const n=Math.max(5,Math.round(tot/.8));wk=n*.8;rs=n*120;reps=n;st=[T(`${n} × 800 m im Intervalltempo ${pace(P)}`,`${n} × 800 m at interval pace ${pace(P)}`),T('Trabpause je 400 m (ca. 2 min)','Jog recovery 400 m each (about 2 min)')]}
     else if(v===2){const n=Math.max(3,Math.round(tot/1.2));wk=n*1.2;rs=n*180;reps=n;st=[T(`${n} × 1200 m im Intervalltempo ${pace(P)}`,`${n} × 1200 m at interval pace ${pace(P)}`),T('Trabpause je 3 min','Jog recovery 3 min each')]}
@@ -326,6 +328,8 @@ function pickQ(c,ph,q,j,rec,lv){const d=c.d;
     if(d<=43)return q===0?W.cruise(c,j):W.mpace(c,j);
     return q===0?W.hills(c,j):W.tempo(c,j);
   }
+  // 5/10 km ambitious: VO₂max every week in the specific block next to race pace (threshold only every third week)
+  if(d<=12&&c.amb&&q===1)return d<=5.5?(j%3===2?W.reps(c,j):W.vo2(c,j)):(j%3===2?W.cruise(c,j):W.vo2(c,j));
   if(d<=12)return q===0?W.rp(c,j):d<=5.5?(j%2?W.vo2(c,j):W.reps(c,j)):(j%2?W.vo2(c,j):W.cruise(c,j));
   if(d<=25)return q===0?W.rp(c,j):(j%3===2?W.vo2(c,j):W.cruise(c,j));
   if(d<=43)return q===0?W.cruise(c,j):(lv==='mlong'?W.vo2(c,0):W.mpace(c,j));
@@ -349,7 +353,10 @@ function perfClass(p,vd){const km=p.km||0;return vd>=50&&km>=50?3:vd>=44&&km>=35
 function expEff(p,vd){const c=perfClass(p,vd),st=p.coach||'bal';return st==='safe'?p.exp:st==='hard'?Math.max(p.exp,c):Math.max(p.exp,Math.min(c,p.exp+1))}
 function ctxFor(st){const p=st.profile,race=mainRace(st),vd=vdotOf(st),hm=hrMax(p),pc=paceSet(vd,race,labZones(p)||manualPaces(p));
   const e=expEff(p,vd),pp=e!==p.exp?{...p,exp:e}:p;
-  return{p:pp,exp:e,d:race?race.dist:10,vd,pc,hm,zones:zonesOf(p,pc,hm),style:p.coach||'bal',capF:{safe:.85,bal:1,hard:1.15}[p.coach||'bal']}}
+  return{p:pp,exp:e,d:race?race.dist:10,vd,pc,hm,zones:zonesOf(p,pc,hm),style:p.coach||'bal',capF:{safe:.85,bal:1,hard:1.15}[p.coach||'bal'],amb:ambLevel(p,race,vd,e)}}
+// how ambitious the goal is (performance index of the goal time, else of the current form; needs some running experience):
+// 0 = beginner to good recreational, 1 = ambitious (≥ 49.5: about HM 1:31 / M 3:12), 2 = performance (≥ 54: about HM 1:25 / M 2:58)
+function ambLevel(p,race,vd,exp){if((exp??p.exp)<1)return 0;const g=race&&race.goal&&race.dist?vdotFrom(race.dist,race.goal):0,v=Math.max(g||0,g?0:vd);return v>=54?2:v>=49.5?1:0}
 
 // Typical lengths of a race-specific preparation (weeks), from coaching practice
 const PREP={5:[8,12],10:[10,16],21.1:[12,20],42.2:[16,32],50:[20,34],100:[24,36]};
@@ -499,7 +506,9 @@ function trimEasy(w,target){const tot=()=>w.days.reduce((a,x)=>a+(x&&!x.optional
   if(!race.virtual&&d>=9&&d<=43){const TS=d>25?[[9,exp>=1?12:10],[5,exp>=1?18:14]]:d>12?[[6,exp>=1?6:5],[3,exp>=1?10:8]]:exp===0?[[4,4]]:[[5,3],[3,5]],pat=trainDays(p),ld=longDayOf(p);
     TS.forEach(([wb,km],k)=>{let wi=weeks.findIndex(w=>w.monday===addD(raceMon,-7*wb));if(wi<0)return;let w=weeks[wi];
       if(w.recovery||w.phase==='taper'||!isSpec(w)){const w2=weeks[wi-1];if(w2&&!w2.recovery&&isSpec(w2)&&w2.phase!=='taper')w=w2;else return}
-      let di=d>25&&k===TS.length-1?ld:qualityDays(pat,ld,2).find(x=>w.days[x]&&w.days[x].quality&&w.days[x].type!=='race');
+      // on short races the test replaces race-pace or threshold work, not the VO₂max session
+      const qd=qualityDays(pat,ld,2).filter(x=>w.days[x]&&w.days[x].quality&&w.days[x].type!=='race');
+      let di=d>25&&k===TS.length-1?ld:(d<=12?qd.find(x=>!['vo2','reps'].includes(w.days[x].type)):undefined)??qd[0];
       if(di==null)di=qualityDays(pat,ld,1)[0];if(di==null||!w.days[di]||w.days[di].type==='race')return;
       const wk0=w.days.reduce((a,x)=>a+(x&&!x.optional&&x.type!=='rest'?x.km||0:0),0),cw={...c,pc:{...c.pc,RP:w.rp||c.pc.RP,RPgoal:c.pc.RP},wkKm:w.days.reduce((a,x)=>a+(x&&x.km||0),0)};w.days[di]=W.mptest(cw,km,k+1,TS.length);
       // a race-pace test on the long-run day is the hard session of the week: the other interval session becomes easy
@@ -520,7 +529,7 @@ function rwAt(c,i){const R=S&&S.plan&&S.plan.rw;if(!R||R.stage>=RW.length)return
 function makeWeek(c,i,ph,j,rec,km){c.wi=i;c.wkKm=km;
   const p=c.p,pat=trainDays(p),days=pat.length,ld=longDayOf(p);
   const qD=qualityDays(pat,ld,2),arr=Array(7).fill(null);
-  const rws=rwAt(c,i),runwalk=rws!=null,nQ=runwalk?0:Math.min(qD.length,qCount(p.exp,ph,rec,days,c.style)),d=c.d;
+  const rws=rwAt(c,i),runwalk=rws!=null,nQ=runwalk?0:Math.min(qD.length,Math.max(qCount(p.exp,ph,rec,days,c.style),c.amb&&c.d>=5&&!rec&&days>=4&&(ph==='build'||ph==='peak'||ph==='base'&&c.amb===2)?2:0)),d=c.d;
   let lv='plain';
   if(d>43&&(ph==='build'||ph==='peak'))lv='ultra';
   else if(ph==='peak'&&d>12&&d<=25)lv='progress';
@@ -536,7 +545,7 @@ function makeWeek(c,i,ph,j,rec,km){c.wi=i;c.wkKm=km;
   if(d>30&&!rec&&(ph==='build'||ph==='peak'))longKm=Math.max(longKm,cap*(ph==='peak'?1:Math.min(.9,.72+.04*j)));
   // the long run grows step by step (at most +12 % or +2.5 km per week), even when the target for the phase is higher
   // the long run stays a reasonable share of the week (more runs per week allow a longer one); marathon: at least 26 km in the build-up
-  {const sh={1:.7,2:.5,3:.42,4:.4,5:.34,6:.3,7:.28}[days],fl=d>30&&(ph==='build'||ph==='peak')?Math.min(cap,26):0;longKm=Math.min(longKm,Math.max(km*sh,fl,5));if(ph==='peak'&&d>30&&!rec&&longKm<cap-1)c.longCapped=Math.max(c.longCapped||0,Math.round(longKm))}
+  {const sh={1:.7,2:.5,3:.42,4:.4,5:c.amb&&d>30?.37:.34,6:c.amb&&d>30?.35:.3,7:c.amb&&d>30?.33:.28}[days],fl=d>30&&(ph==='build'||ph==='peak')?Math.min(cap,26):0;longKm=Math.min(longKm,Math.max(km*sh,fl,5));if(ph==='peak'&&d>30&&!rec&&longKm<cap-1)c.longCapped=Math.max(c.longCapped||0,Math.round(longKm))}
   if(c.prevLong&&!rec&&ph!=='taper')longKm=Math.min(longKm,Math.max(c.prevLong*1.12,c.prevLong+2.5));
   // marathon taper: the long run comes down gradually (about 70 % and 50 % of the longest), not in one step
   if(ph==='taper'&&d>25&&c.prevLong)longKm=Math.max(longKm,Math.min(cap,c.prevLong*(j===0?.7:.5)));
@@ -545,7 +554,7 @@ function makeWeek(c,i,ph,j,rec,km){c.wi=i;c.wkKm=km;
   for(let q=0;q<nQ;q++)arr[qD[q]]=pickQ(c,ph,q,j,rec,lv);
   if(d>25&&d<=43&&(lv==='mlong'||lv==='progress'))for(const x of qD)if(arr[x]&&arr[x].type==='mpace')arr[x]=W.long(c,Math.min(longKm*.6,18),'medium');
   // half marathon and shorter: a long run with a fast finish already counts as a hard session; with two others, race-pace intervals become easy + strides
-  if(d<=25&&(lv==='mlong'||lv==='progress')&&nQ>=2&&c.style!=='hard'){const drop=ph==='peak'?['cruise','vo2','tempo']:['rp'];for(const x of qD)if(arr[x]&&drop.includes(arr[x].type)){arr[x]=W.easy(c,Math.min(arr[x].km,10));break}}
+  if(d<=25&&(lv==='mlong'||lv==='progress')&&nQ>=2&&c.style!=='hard'&&!c.amb){const drop=ph==='peak'?['cruise','vo2','tempo']:['rp'];for(const x of qD)if(arr[x]&&drop.includes(arr[x].type)){arr[x]=W.easy(c,Math.min(arr[x].km,10));break}}
   if(d>43&&(ph==='build'||ph==='peak')&&!rec&&days>=5){const b=(ld+6)%7;if(pat.includes(b)&&!arr[b])arr[b]=W.long(c,longKm*.55,'b2b')}
   const easyDays=pat.filter(x=>!arr[x]);
   return fillEasy(c,arr,easyDays,km,longKm,{drop:days>=4&&(ph==='base'||ph==='taper'||rec),medium:!rec&&ph!=='taper'&&days>=4,strides:!runwalk&&!rec&&ph!=='taper'&&(p.exp>=1||i>=2),vary:!runwalk&&!rec&&ph!=='taper',runwalk,rws});
@@ -565,14 +574,16 @@ function fillEasy(c,arr,easyDays,km,longKm,o){const p=c.p,ld=longDayOf(p),minE=p
   const cand=E.filter(x=>role[x]==='n'&&!hard(x+1)&&x!==(ld+6)%7);
   const med=o.medium&&E.length>=2&&longKm>=11&&cand.length?cand[(i)%cand.length]:null;if(med!=null)role[med]='m';
   // short–medium–long: one normal day becomes a short run so the easy runs differ clearly (e.g. 6 / 10 / 8 instead of 8 / 8 / 8)
+  // the day before the long run stays short and easy, so the long run can be run in good quality
+  {const pre=(ld+6)%7;if(E.includes(pre)&&role[pre]!=='m')role[pre]='pl'}
   {const nn=E.filter(x=>role[x]==='n');if(nn.length>=2)role[nn[i%nn.length]]='s';
-    else{const c2=E.filter(x=>role[x]!=='m');if(c2.length>=2){const al=c2.find(x=>{const q=arr[(x+6)%7];return q&&q.type==='long'});const sd=al!=null?al:c2[i%c2.length];role[sd]='s';c2.forEach(x=>{if(x!==sd&&role[x]==='rec')role[x]='rl'})}}}
-  const wig=[1,1.12,.9,1.05,.95][i%5],w={rec:.7,rl:1.05,n:1,m:0,s:.68};let mKm=med!=null?Math.min(longKm*.78,rest*.4):0;
+    else{const c2=E.filter(x=>role[x]!=='m'&&role[x]!=='pl');if(c2.length>=2){const al=c2.find(x=>{const q=arr[(x+6)%7];return q&&q.type==='long'});const sd=al!=null?al:c2[i%c2.length];role[sd]='s';c2.forEach(x=>{if(x!==sd&&role[x]==='rec')role[x]='rl'})}}}
+  const wig=[1,1.12,.9,1.05,.95][i%5],w={rec:.7,rl:1.05,n:1,m:0,s:.68,pl:.6};let mKm=med!=null?Math.min(longKm*.78,rest*.4):0;
   const sw=E.reduce((a,x)=>a+(role[x]==='m'?0:w[role[x]]*(E.indexOf(x)%2?wig:2-wig)),0),unit=sw?(rest-mKm)/sw:0;
   let strides=0,varied=false;const stN=p.exp>=1?2:1;
   // one easy run per week gets its own form; after a hard day only calm forms (trail, drills)
   const nonS=E.filter(x=>role[x]==='n'||role[x]==='m'&&o.gen),vRec=!nonS.length,vday=nonS.length?nonS[i%nonS.length]:(E.filter(x=>role[x]==='rl').concat(E.filter(x=>role[x]==='rec'||role[x]==='s')).slice(0,1)[0]??null);
-  E.forEach(x=>{const r=role[x];let k=r==='m'?mKm:Math.max(r==='rec'||r==='s'||r==='rl'?Math.max(3,minE-1):minE,unit*w[r]*(r==='s'?1:E.indexOf(x)%2?wig:2-wig));k=Math.min(k,Math.max(minE,longKm*(r==='m'?.8:o.ecap||.7)));if(r!=='m'&&med!=null)k=Math.min(k,Math.max(minE,mKm*.85));
+  E.forEach(x=>{const r=role[x];let k=r==='pl'?Math.min(10,Math.max(minE,unit*w.pl)):r==='m'?mKm:Math.max(r==='rec'||r==='s'||r==='rl'||r==='pl'?Math.max(3,minE-1):minE,unit*w[r]*(r==='s'?1:E.indexOf(x)%2?wig:2-wig));k=Math.min(k,Math.max(minE,longKm*(r==='m'?.8:o.ecap||.7)));if(r!=='m'&&med!=null)k=Math.min(k,Math.max(minE,mKm*.85));
     const vk=o.vary&&!o.runwalk&&x===vday?(()=>{const ks=['abc','trail','prog','strides'].filter(z=>z!=='prog'||p.exp>=1&&k>=6&&k<=16&&!vRec).filter(z=>z!=='trail'||k<=14).filter(z=>!vRec||z!=='strides');return ks[i%ks.length]})():null;
     if(vk){varied=true;arr[x]=W.easyVar(c,k,vk);return}
     const st=(r==='n'||r==='s')&&strides<stN&&o.strides;if(st)strides++;
@@ -594,7 +605,7 @@ function makeGenWeek(c,i,j,rec,km,mode){c.wi=i;c.wkKm=km;
   if(!rec)c.prevLong=Math.max(c.prevLong||0,arr[ld].km);
   if(qa!=null)arr[qa]=runwalk?W.easy(c,km*.2,{runwalk:rws}):(keep||amb)&&!rec&&!c.trans?(p.exp===0?W.fartlek(c,0,true):[W.fartlek(c,1,true),W.hills(c,1),W.tempo(c,Math.min(j%6,3),true)][j%3]):(hold||rec||c.trans||p.exp===0)?W.fun(c,j,km*.2):(j%2?W.fartlek(c,Math.min(j,2),true):W.hills(c,Math.min(j,2)));
   /* no fixed cross-training days: rest or cross-training comes only as a reaction to high load (loadGuard) */
-  else if(amb&&qb!=null&&days>=5&&!rec&&j%2===1&&!runwalk)arr[qb]=arr[qa]&&arr[qa].type==='tempo'?W.hills(c,1):W.tempo(c,Math.min(j,3),true);
+  if((amb||c.amb&&hold)&&qb!=null&&days>=5&&!rec&&(c.amb===2||j%2===1)&&!runwalk&&!arr[qb])arr[qb]=arr[qa]&&arr[qa].type==='tempo'?W.hills(c,1):W.tempo(c,Math.min(j,3),true);
   const easyDays=pat.filter(x=>!arr[x]);
   // maintaining fitness (keep/hold): with intensity kept, about 3 runs a week are enough (Mujika & Padilla); one more stays optional, further days are off
   const maint=(keep||hold)&&!runwalk,act=Math.max(3,days-(c.trans?2:1)),filled=arr.filter(x=>x&&x.type!=='alt').length,nd=maint&&days>=4?Math.max(easyDays.length>=2?1:0,easyDays.length-Math.max(0,act-filled)):days>=4?1:0;

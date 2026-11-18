@@ -110,15 +110,15 @@ function saveLf(f){const t=today(),err=m=>({err:m});
         if(!a1||!a2||Number.isNaN(a1)||Number.isNaN(a2)||!(b1>=60&&b1<=230)||!(b2>=60&&b2<=230))return err('Für das Decoupling bitte Pace und Puls beider Hälften eingeben, oder die Felder leer lassen.');
         hh=[a1,b1,a2,b2];if(km>15||f.type==='mptest'){const e1=(3600/a1)/b1,e2=(3600/a2)/b2;dec=Math.round((e1-e2)/e1*1000)/10}}
       const reps=f.imp&&f.imp.iv&&iv?f.imp.iv.n:(+f.reps||null);
-      const sec=parseDur(f.sec),wsec=iv?parseDur(f.wsec):null;
+      const bk=BLK.has(f.type),sec=parseDur(f.sec),wsec=iv||bk?parseDur(f.wsec):null;
       if(Number.isNaN(sec)||(sec!=null&&(sec<120||sec>86400)))return err('Dauer bitte als h:mm:ss oder mm:ss eingeben, z. B. 52:30.');
       if(Number.isNaN(wsec)||(wsec!=null&&sec&&wsec>sec))return err('Die Belastungszeit muss kürzer sein als die Gesamtdauer.');
-      let pp=p;if(pp==null&&!iv&&sec&&km)pp=Math.round(sec/km);
+      let pp=p;if(pp==null&&!iv&&!bk&&sec&&km)pp=Math.round(sec/km);
       const gz=iv||f.gain===''||f.gain==null?null:pnum(f.gain);if(gz!=null&&(Number.isNaN(gz)||gz<0||gz>6000))return err(T('Höhenmeter bitte als Zahl zwischen 0 und 6000 eingeben, oder das Feld leer lassen.','Please enter climbing as a number between 0 and 6000, or leave the field empty.'));
       const elv=iv?null:gz!=null?elevIdx(gz):f.elev;
       x={s:toExtra?{type:'free',title:RTL[f.type],km,zone:'Z2'}:JSON.parse(JSON.stringify(pl)),done:true,type:f.type,km,interval:iv,pace:pp,sec:sec||null,wsec:wsec||null,hr,hrMax:hrMx||null,shoe:f.shoe!=null?f.shoe:shoeDef(),elev:elv,gain:gz!=null?Math.round(gz):null,rpe:+f.rpe,
-        reps:iv?reps:null,dec,h:hh,src:f.imp?f.imp.src:'manual',at:Date.now()};
-      if(f.imp){x.dur=Math.round((sec||f.imp.mov||0)/60)||null;x.impSum=f.imp}
+        reps:iv?reps:null,dec,h:hh,src:f.imp?f.imp.src:'manual',at:Date.now()};if(bk)x.blk=true;
+      if(f.imp){x.dur=Math.round((sec||f.imp.mov||0)/60)||null;x.impSum=JSON.parse(JSON.stringify(f.imp))}
     }
     let keepId=null;
     if(f.editKey){if(f.editKey.startsWith('d:'))delete S.logs[f.editKey.slice(2)];else{keepId=f.editKey.slice(2);const old=S.extra.find(e=>e.id===keepId);if(old&&old.replaces&&S.logs[old.replaces]&&S.logs[old.replaces].reason==='alt')delete S.logs[old.replaces];S.extra=S.extra.filter(e=>e.id!==keepId)}}
@@ -201,7 +201,7 @@ function renderSheet(){
   if(kind==='year')h=yearHTML();
   if(kind==='tools')h=toolsHTML();
   if(kind==='fileHow')h=fileHowHTML();
-  if(kind==='ins'){const I=INS()[ui.sheet.k]||['','',''];h=`<h2 style="margin:0 44px 12px 0;display:flex;gap:10px;align-items:center"><span class="fi" style="--fc:${I[2]}">${FICON[I[1]]||""}</span>${I[0]}</h2>${insBody(ui.sheet.k)}`}
+  if(kind==='ins'){const I=INS()[INS_ALIAS[ui.sheet.k]||ui.sheet.k]||['','',''];h=`<h2 style="margin:0 44px 12px 0;display:flex;gap:10px;align-items:center"><span class="fi" style="--fc:${I[2]}">${FICON[I[1]]||""}</span>${I[0]}</h2>${insBody(ui.sheet.k)}`}
   if(kind==='raceDay'){const r=S.races.find(x=>x.id===ui.sheet.id);h=r?`<div class="label">${fdate(r.date)} ${pd(r.date).getFullYear()} · ${fk(r.dist)} km${r.goal?' · '+T('Ziel ','goal ')+fmtTime(r.goal):''}</div><h2 class="d" style="font-size:26px;margin:4px 0 10px">${T('Renntag-Plan','Race-day plan')} · ${esc(r.name)}</h2>${raceDayHTML(r)}
     <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn ghost" data-act="rdPrint">${T('Drucken','Print')}</button><button class="btn primary" data-act="closeSheet">${T('Schliessen','Close')}</button></div>`:''}
   if(kind==='xview'){const x=(S.extra||[]).find(e=>e.id===ui.sheet.id);h=x?`<div class="label">${fdate(x.date)} · zusätzliches Training</div><h2 class="d" style="font-size:24px;margin:6px 0 12px">${esc(x.s.title)}</h2>${logCard(x.date,x,x.id)}<div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn ghost" data-act="closeSheet">Schliessen</button></div>`:''}
@@ -286,6 +286,8 @@ const ACT={
     S.races.push({id:uid(),name:goalName(d,g),date:goalDate(S.profile,d,g,f.gDate),dist:d,goal:g||null,rel:'high',plan:'own',prio:'A',adapt:true,virtual:true});
     ui.gf=null;setGoalMode('goal');render()},
   syncNow(){cSync()},
+  // rescue: join this device and the account without treating anything as deleted, then upload
+  async mergeNow(){if(!isCloud()||!S)return;setSync('busy');try{const{data:R}=await cPull(CU);if(R){S=mergeState(S,R,null);saveLocal()}await cPush(S,CU);const acc=accounts(),u=acc.users[CU];u.synced=S.updatedAt||0;u.bk=syncKeys(S);saveAccounts(acc);setSync('ok');ui.mergeMsg=T('Zusammengeführt: Alles von diesem Gerät ist jetzt im Konto.','Merged: everything from this device is now in your account.');render()}catch(e){setSync(e&&e.auth?'auth':'off')}},
   cuOpen(){const u=accounts().users[CU]||{};ui.cu={user:String(u.name||'').replace(/\s+/g,''),pw:'',pw2:'',err:''};render()},
   cuCancel(){ui.cu=null;render()},
   cuSave(){cloudUpgrade()},
@@ -403,7 +405,7 @@ ui.auth={mode:Object.keys(a.users).length?'login':'create',name:'',pw:'',pw2:'',
   lfSportAll(){ui.lfSportAll=true;renderSheet()},
   lfDate(el){const f=ui.lf,d=el.dataset.v;f.date=d;const pl=planSession(d),logged=S.logs[d];
     if(f.kind==='alt'){const can=pl&&!['rest','race'].includes(pl.type)&&!logged&&d>=S.plan.startMonday;f.mode=can?'plan':'extra';f.assign=can&&pl.type==='alt'?'plan':'extra'}
-    else{const toPlan=pl&&pl.type!=='rest'&&pl.type!=='alt'&&!logged&&d>=S.plan.startMonday;f.mode=toPlan?'plan':'extra';f.assign='plan';if(f.imp){f.type=guessType(f.imp,toPlan?pl:null);lfPrefill(f)}}
+    else{const toPlan=pl&&pl.type!=='rest'&&pl.type!=='alt'&&!logged&&d>=S.plan.startMonday;f.mode=toPlan?'plan':'extra';f.assign='plan';if(f.imp){if(f.imp.ser){applyPlanFit(f.imp,toPlan?plannedFor(d)||pl:null);const v=f.imp.iv;f.wsec=v&&v.wt?fmtTime(v.wt):'';f.reps=v&&v.n>1?String(v.n):''}f.type=guessType(f.imp,toPlan?pl:null);lfPrefill(f)}}
     ui.lfErr='';renderSheet()},
   importAct(el){ui.altPick=el&&el.dataset&&el.dataset.alt?Object.assign({},ui.altSel):null;ui.impFor=el&&el.dataset&&el.dataset.d||null;
     // first time: a short guide how the file gets onto the phone; afterwards straight to the file picker
@@ -552,7 +554,7 @@ async function askCoach(){
   ui.coach={text:'',busy:true,err:''};render();
   const t=today(),mon=monday(t),race=mainRace(S),c=ctxFor(S);
   const wk=[...Array(7)].map((_,i)=>{const d=addD(mon,i),s=planSession(d),l=S.logs[d],ci=S.checkins[d];
-    return{tag:DOWS[i]+' '+d,plan:s?`${s.title}${s.km?' '+s.km+' km':''}`:'Ruhetag',eintrag:l?(l.done?{pace:l.pace?fmtPace(l.pace):null,puls:l.hr,rpe:l.rpe,hm:l.elev!=null?ELEV[l.elev].l:null,effizienz:effOf(l)?+effOf(l).toFixed(1):null}:'ausgelassen'):null,checkin:ci?{schmerz:PAIN[ci.pain],gefuehl:FEEL[ci.feel]}:null}});
+    return{tag:DOWS[i]+' '+d,plan:s?`${s.title}${s.km?' '+s.km+' km':''}`:'Ruhetag',eintrag:l?(l.done?{pace:l.pace?fmtPace(l.pace):null,puls:l.hr,rpe:l.rpe,hm:l.elev!=null?ELEV[l.elev].l:null,effizienz:effAny(l)?+effAny(l).toFixed(1):null}:'ausgelassen'):null,checkin:ci?{schmerz:PAIN[ci.pain],gefuehl:FEEL[ci.feel]}:null}});
   const last=S.adapt.history[S.adapt.history.length-1],w=planWeek(t);
   const data={heute:t,profil:{alter:S.profile.age,geschlecht:S.profile.sex,erfahrung:EXPL[S.profile.exp][0],trainingstage:trainDays(S.profile).map(i=>DOWS[i]).join(", "),langer_lauf:DOWL[longDayOf(S.profile)]},
     vdot:+c.vd.toFixed(1),paces:{locker:`${fmtPace(c.pc.E[0])}-${fmtPace(c.pc.E[1])}`,schwelle:fmtPace(c.pc.T),intervall:fmtPace(c.pc.I)},

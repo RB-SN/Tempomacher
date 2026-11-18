@@ -37,7 +37,7 @@ function mergeShots(rs){
   const lapImg=[...rs].sort((a,b)=>b.rows-a.rows)[0];
   // laps from another activity? different dates or a lap sum that does not fit the total: then ignore the laps
   const ds=[...new Set(rs.filter(r=>r.date&&(r.lab>=2||r.rows>=2)).map(r=>r.date))],sumKm=order[0].km;
-  m.warn=[];if(lapImg!==order[0]&&lapImg.rows>=2){
+  m.warn=[];if(lapImg!==order[0]&&lapImg.rows>=2&&rs.filter(r=>r.laps&&r.laps.length>=2).length<=1){
     if(lapImg.date&&order[0].date&&lapImg.date!==order[0].date)m.warn.push({k:'dates',a:order[0].date,b:lapImg.date});
     else if(lapImg.lapKm&&sumKm&&Math.abs(lapImg.lapKm-sumKm)/sumKm>.08)m.warn.push({k:'lapsum',a:sumKm,b:lapImg.lapKm})}
   const lapsOk=!m.warn.length;void ds;
@@ -45,7 +45,7 @@ function mergeShots(rs){
   m.rows=Math.max(...rs.map(r=>r.rows));m.kw=(rs.find(r=>r.kw)||{}).kw||null;
   // interval tables over several screenshots (e.g. Garmin filters «Warm up», «Laufen», «Erholung», «Cool Down»)
   const LL=rs.map(r=>r.laps).filter(Boolean);if(LL.length&&!m.warn.some(w=>w.k==='dates')){const LA=lapAnalysis(LL);if(LA){m.iv=LA.iv;m.dec=null;
-    if(LA.tot){if(m.km==null)m.km=LA.tot.km;if(m.mov==null)m.mov=LA.tot.mov;if(m.avgHr==null&&LA.tot.hr)m.avgHr=LA.tot.hr;if(m.hrMax==null&&LA.tot.hrMax)m.hrMax=LA.tot.hrMax}}}
+    if(LA.tot){if(m.km==null)m.km=LA.tot.km;if(m.mov==null||Math.abs(LA.tot.mov-m.mov)<=m.mov*.01)m.mov=LA.tot.mov;if(m.avgHr==null&&LA.tot.hr)m.avgHr=LA.tot.hr;if(m.hrMax==null&&LA.tot.hrMax)m.hrMax=LA.tot.hrMax}}}
   if(m.km==null){const r=rs.find(x=>x.km!=null);if(r)m.km=r.km}
   if(!altS&&m.mov&&m.km&&(m.mov/m.km<150||m.mov/m.km>1200))m.mov=null;
   if(!m.mov&&m.avgPace&&m.km)m.mov=Math.round(m.avgPace*m.km);
@@ -61,14 +61,25 @@ async function userSuggest(base){
   for(let i=0;i<10&&out.length<3;i++){const n=10+Math.floor(Math.random()*90),c=fn+n;if(tried.has(c))continue;tried.add(c);
     try{if(await rpc('tm_available',{p_user:c}))out.push(c)}catch(e){break}}
   return out}
-// combine two versions edited on different devices: newer version wins, entries from the other one are kept
-function mergeState(L,R){
+// which entries a version holds (kept after each sync as the common base for the next one)
+const syncKeys=st=>st?{logs:Object.keys(st.logs||{}),extra:(st.extra||[]).map(x=>x.id),pbs:(st.pbs||[]).map(x=>x.id),races:(st.races||[]).map(x=>x.id),shoes:(st.shoes||[]).map(x=>x.id)}:null;
+// combine two versions edited on different devices (three-way): the newer version wins for settings, entries are joined;
+// an entry that existed at the last sync and is missing on one side was deleted there and stays deleted.
+// Without a base (first sync after the update) nothing counts as deleted, so no run is ever lost.
+function mergeState(L,R,base){
   const newer=(R.updatedAt||0)>(L.updatedAt||0),B=JSON.parse(JSON.stringify(newer?R:L)),O=newer?L:R;
-  const pick=(a,b)=>((a&&a.at)||0)>=((b&&b.at)||0)?a:b;
-  B.logs=B.logs||{};Object.keys(O.logs||{}).forEach(k=>{B.logs[k]=B.logs[k]?pick(B.logs[k],O.logs[k]):O.logs[k]});
+  // newer entry wins; entries without a time stamp take their version's time; a completed run beats a not-done marker
+  // unless that marker is a deliberate later decision; a race keeps its result if only one side has it
+  const tB=B.updatedAt||0,tO=O.updatedAt||0,isB=x=>B.logs&&Object.values(B.logs).includes(x)||[].concat(B.extra||[],B.pbs||[],B.races||[],B.shoes||[]).includes(x);
+  const pick=(a,b)=>{const ta=a.at||(isB(a)?tB:tO),tb=b.at||(isB(b)?tB:tO);
+    if(a.done===true&&b.done===false&&!(b.reason&&b.reason!=='alt'&&tb>ta))return a;if(b.done===true&&a.done===false&&!(a.reason&&a.reason!=='alt'&&ta>tb))return b;
+    const w=ta>=tb?a:b,l=w===a?b:a;if(l.res&&!w.res)return{...w,res:l.res};return w},gone=(k,key,inB,inO)=>base&&base[k]&&base[k].includes(key)&&(!inB||!inO);
+  B.logs=B.logs||{};const lk=new Set([...Object.keys(B.logs),...Object.keys(O.logs||{})]);
+  lk.forEach(k=>{const b=B.logs[k],o=(O.logs||{})[k];if(gone('logs',k,b,o)){delete B.logs[k];return}B.logs[k]=b&&o?pick(b,o):b||o});
   B.checkins=B.checkins||{};Object.keys(O.checkins||{}).forEach(k=>{if(!B.checkins[k])B.checkins[k]=O.checkins[k]});
-  const un=(a,b)=>{const m=new Map((a||[]).map(x=>[x.id,x]));(b||[]).forEach(x=>{m.set(x.id,m.has(x.id)?pick(m.get(x.id),x):x)});return[...m.values()]};
-  B.extra=un(B.extra,O.extra);B.pbs=un(B.pbs,O.pbs);B.races=un(B.races,O.races);if(B.shoes||O.shoes)B.shoes=un(B.shoes,O.shoes);
+  const un=(f)=>{const a=B[f]||[],b=O[f]||[],m=new Map(a.map(x=>[x.id,x])),ob=new Map(b.map(x=>[x.id,x]));
+    ob.forEach((x,id)=>{m.set(id,m.has(id)?pick(m.get(id),x):x)});return[...m.values()].filter(x=>!gone(f,x.id,a.some(y=>y.id===x.id),ob.has(x.id)))};
+  B.extra=un('extra');B.pbs=un('pbs');B.races=un('races');if(B.shoes||O.shoes)B.shoes=un('shoes');
   B.updatedAt=Date.now();return B}
 let syncBusy=false,syncAgain=false,pushT=null;
 function setSync(s){sync=s;try{renderHdr()}catch(e){}}
@@ -79,11 +90,13 @@ async function cSync(){
   try{
     const{data:R}=await cPull(slug);if(slug!==CU)return;
     const acc=accounts(),u=acc.users[slug],base=u.synced||0;let changed=false;
-    if(R&&(!S||(R.updatedAt||0)>(S.updatedAt||0))){
-      if(S&&(S.updatedAt||0)>base){S=mergeState(S,R);await cPush(S,slug)}else S=R;
-      saveLocal();changed=true}
-    else if(S&&(!R||(S.updatedAt||0)>(R.updatedAt||0)))await cPush(S,slug);
-    u.synced=S?S.updatedAt||0:0;saveAccounts(acc);setSync('ok');
+    // three-way decision against the last synced version: changed only remotely → take it; only locally → push;
+    // on both sides → merge (never push a local version over remote entries it has not seen)
+    const rT=R?R.updatedAt||0:0,lT=S?S.updatedAt||0:0,rCh=!!R&&rT>base&&rT!==lT,lCh=!!S&&lT>base&&rT!==lT;
+    if(R&&!S){S=R;saveLocal();changed=true}
+    else if(rCh){const M=mergeState(S,R,u.bk||null),add=JSON.stringify(syncKeys(M))!==JSON.stringify(syncKeys(R));S=M;saveLocal();if(lCh||add)await cPush(S,slug);changed=true}
+    else if(S&&(lCh||!R))await cPush(S,slug);
+    u.synced=S?S.updatedAt||0:0;u.bk=syncKeys(S);saveAccounts(acc);setSync('ok');
     if(changed){if(S)weeklyCheck();if(!ui.sheet)render();else renderHdr()}
   }catch(e){setSync(e&&e.auth?'auth':'off')}
   finally{syncBusy=false;if(syncAgain){syncAgain=false;cSync()}}
@@ -91,6 +104,9 @@ async function cSync(){
 function schedulePush(){if(!isCloud())return;clearTimeout(pushT);pushT=setTimeout(cSync,1200)}
 document.addEventListener('visibilitychange',()=>{if(!isCloud())return;if(document.visibilityState==='visible')cSync();else if(pushT)cSync()});
 window.addEventListener('online',()=>{if(isCloud())cSync()});
+// an open, visible window (laptop) also checks for news from other devices: on focus and every 60 s
+window.addEventListener('focus',()=>{if(isCloud())cSync()});
+setInterval(()=>{if(isCloud()&&document.visibilityState==='visible'&&!pushT)cSync()},60000);
 const cloudSlugOf=user=>{const a=accounts(),l=user.toLowerCase();return Object.keys(a.users).find(k=>a.users[k].cloud&&a.users[k].user===l)||null};
 async function cloudLogin(name,pw,keep){
   const A=ui.auth,err=m=>{A.err=m;A.busy=false;render()};
@@ -177,7 +193,7 @@ function pwCard(){
 function accCard(){
   const u=accounts().users[CU]||{};
   if(u.cloud)return`<div class="card stack" style="gap:10px"><h3>Konto & Geräte</h3><p class="muted" style="margin:0;font-size:14.5px">Benutzername <b>${esc(u.name)}</b>. Melde dich auf Handy oder Laptop mit diesem Benutzernamen und deinem Passwort an, dann hast du überall dasselbe Profil. Die Daten werden verschlüsselt gespeichert und automatisch abgeglichen.</p>
-    <div class="row" style="gap:10px;align-items:center"><button class="btn small ghost" data-act="syncNow">Jetzt synchronisieren</button><span class="hint">${sync==='ok'?'Synchronisiert ✓':sync==='busy'?'Synchronisiere …':sync==='auth'?'Anmeldung abgelaufen, bitte neu anmelden.':'Offline. Wird nachgeholt, sobald eine Verbindung besteht.'}</span></div></div>`;
+    <div class="row" style="gap:10px;align-items:center"><button class="btn small ghost" data-act="syncNow">Jetzt synchronisieren</button><button class="btn small ghost" data-act="mergeNow">${T('Mit Konto zusammenführen','Merge with account')}</button><span class="hint">${sync==='ok'?'Synchronisiert ✓':sync==='busy'?'Synchronisiere …':sync==='auth'?'Anmeldung abgelaufen, bitte neu anmelden.':'Offline. Wird nachgeholt, sobald eine Verbindung besteht.'}</span></div></div>`;
   if(!CLOUD)return'';
   const f=ui.cu;
   if(!f)return`<div class="card stack" style="gap:10px"><h3>Konto & Geräte</h3><p class="muted" style="margin:0;font-size:14.5px">Dieses Profil ist nur auf diesem Gerät gespeichert. Mit einem Benutzernamen kannst du es auch auf dem Handy oder Laptop nutzen; Plan und Einträge werden übernommen.</p><button class="btn small blue" style="align-self:flex-start" data-act="cuOpen">Auf allen Geräten nutzen</button></div>`;
@@ -370,7 +386,7 @@ function renderTabs(){
   t.innerHTML=`<div class="in">${tabs.map(([k,l])=>`<button data-act="tab" data-v="${k}" ${ui.tab===k?'aria-current="page"':''}>${ICONS[k]}${l}</button>`).join('')}</div>`;
 }
 function render(){try{renderInner();addInfo($('#app'))}catch(e){showFatal((e&&e.stack)||e)}}
-const APP_VER='3.0.0';
+const APP_VER='3.3.0';
 const footer=()=>`<footer class="copy">© ${new Date().getFullYear()} Ramon Betschart. Alle Rechte vorbehalten.<br><span style="opacity:.7">Version ${APP_VER}</span></footer>`;
 function renderInner(){
   if(S)migrate();

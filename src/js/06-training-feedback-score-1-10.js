@@ -12,8 +12,10 @@ function fbRuns(){
 function similarRuns(date,l,ty){
   const all=fbRuns().filter(o=>o.l!==l&&(o.date<date||(o.date===date&&(o.l.at||0)<(l.at||0)))&&daysBetween(o.date,date)<=180);
   let s=all.filter(o=>logType(o.l)===ty);if(s.length<2)s=all.filter(o=>(SIMG[ty]||[ty]).includes(logType(o.l)));
+  // tempo and marathon-pace blocks: compare block with block only (older entries may hold the whole-run average)
+  if(BLK.has(ty))s=s.filter(o=>blkData(o.l)===blkData(l));
   // prefer runs of similar hilliness (within 10 m/km), if there are enough
-  const g=hillG(l);if(g!=null&&!isIv(l)){const near=s.filter(o=>{const h=hillG(o.l);return h!=null&&Math.abs(h-g)<=10});if(near.length>=2)s=near}
+  const g=hillG(l);if(g!=null&&!isIv(l)&&!isBlk(l)){const near=s.filter(o=>{const h=hillG(o.l);return h!=null&&Math.abs(h-g)<=10});if(near.length>=2)s=near}
   return s.slice(-6);
 }
 function targetPace(ty,s,c){
@@ -61,7 +63,7 @@ function rateRun(l,date,shallow){
     else if(q<.9&&s.km-km>1){lo+=.5;minus.push(T(`Etwas kürzer als geplant (${fk(km)} statt ${fk(s.km)} km).`,`A bit shorter than planned (${fk(km)} instead of ${fk(s.km)} km).`))}
     else if(easyT&&q>1.25&&km-s.km>1.5){lo+=.5;minus.push(T(`Deutlich länger als geplant (${fk(km)} statt ${fk(s.km)} km). Zusätzlicher Umfang erhöht das Verletzungsrisiko mehr, als er bringt.`,`Much longer than planned (${fk(km)} instead of ${fk(s.km)} km). Extra volume raises injury risk more than it helps.`))}}
   // 2) pace control (elevation-adjusted for continuous runs)
-  const tp=targetPace(ty,s,c),pv=isIv(l)?l.pace:gap,em=elevM(l),cap0=hrCap(ty,s,c);
+  const tp=targetPace(ty,s,c),pv=isIv(l)||isBlk(l)&&blkData(l)?l.pace:gap,em=elevM(l),cap0=hrCap(ty,s,c);
   if(isIv(l)&&(!l.pace||!l.hr))tips.unshift(T(`Für die Beurteilung der Intervalle fehlen ${!l.pace&&!l.hr?'Pace und Puls':!l.pace?'die Pace':'der Puls'} der Belastungen. Lade beim nächsten Mal einen Screenshot der Runden hoch oder trag die Werte der Belastungen ein; nur so lassen sich Effizienz und Form beurteilen.`,`To assess the intervals, ${!l.pace&&!l.hr?'pace and heart rate':!l.pace?'the pace':'the heart rate'} of the work phases are missing. Next time upload a screenshot of the laps or enter the work values; only then can efficiency and form be assessed.`));
   if(tp&&pv&&!noRef()){const[f,sl]=tp;pos+=easyT?1:qual?1.5:0;
     if(easyT&&l.hr&&cap0){hrDone=true;
@@ -107,9 +109,9 @@ function rateRun(l,date,shallow){
   if(!shallow){
     const prev=similarRuns(date,l,ty);
     if(prev.length){
-      const P=prev.map(o=>({gap:isIv(o.l)?o.l.pace:gapOf(o.l),hr:o.l.hr,ef:effOf(o.l),km:logKm(o.l),em:elevM(o.l),rpe:o.l.rpe}));
+      const P=prev.map(o=>({gap:isIv(o.l)||isBlk(o.l)&&blkData(o.l)?o.l.pace:gapOf(o.l),hr:o.l.hr,ef:effAny(o.l),km:logKm(o.l),em:elevM(o.l),rpe:o.l.rpe}));
       const av=k=>{const v=P.map(x=>x[k]).filter(x=>x!=null&&isFinite(x));return v.length?avg(v):null};
-      const aG=av('gap'),aH=av('hr'),aE=av('ef'),aK=av('km'),aM=av('em'),aR=av('rpe'),ef=effOf(l);
+      const aG=av('gap'),aH=av('hr'),aE=av('ef'),aK=av('km'),aM=av('em'),aR=av('rpe'),ef=effAny(l),eg=effGroup(l),eN=effName(eg);
       const nm=prev.length===1?T('deinem letzten vergleichbaren Lauf','your last similar run'):T(`deinen letzten ${prev.length} vergleichbaren Läufen`,`your last ${prev.length} similar runs`);
       const part=(g,h,k,m)=>[g?pace(g)+(isIv(l)?T(' (Belastung)',' (work)'):''):null,h?T('Puls ','HR ')+Math.round(h):null,k?fk(Math.round(k*10)/10)+' km':null,m!=null?Math.round(m)+' Hm':null].filter(Boolean).join(' · ');
       void part;tab={n:prev.length,rows:[[T('Pace','Pace')+(isIv(l)?T(' Belastung',' work'):hilly(l)?T(' (höhenber.)',' (elev.-adj.)'):''),pv?pace(pv):'–',aG?pace(aG):'–'],
@@ -118,11 +120,13 @@ function rateRun(l,date,shallow){
         [T('Anstrengung','Effort'),l.rpe?l.rpe+'/10':'–',aR?fk(Math.round(aR*10)/10)+'/10':'–']]};
       cmp='';
       if(em!=null&&aM!=null&&Math.abs(em-aM)>=75)cmp+=T(` Heute ${em>aM?'deutlich mehr':'deutlich weniger'} Höhenmeter; die Pace ist darum höhenbereinigt verglichen.`,` Today ${em>aM?'much more':'much less'} climbing, so pace is compared elevation-adjusted.`);
-      if(ef&&aE&&aH&&Math.abs(l.hr-aH)>8)cmp+=T(' Der Puls lag deutlich anders als sonst, darum ist die Effizienz nicht direkt vergleichbar.',' Heart rate was quite different from usual, so efficiency is not directly comparable.');
+      if(ef&&aE&&aH&&Math.abs(l.hr-aH)>8)cmp+=T(` Der Puls lag deutlich anders als sonst, darum ist die ${eN} nicht direkt vergleichbar.`,` Heart rate was quite different from usual, so ${eN.toLowerCase()} is not directly comparable.`);
       else if(ef&&aE){const d=(ef/aE-1)*100;
-        if(d>=3){bo+=1;plus.push(T(`Effizienz ${pctTxt(d)} gegenüber ${nm}: bei gleichem Puls schneller.`,`Efficiency ${pctTxt(d)} versus ${nm}: faster at the same heart rate.`))}
-        else if(d<=-4){lo+=1;minus.push(T(`Effizienz ${pctTxt(d)} gegenüber ${nm}. Häufige Gründe: Müdigkeit, Hitze, wenig Schlaf, beginnende Erkältung.`,`Efficiency ${pctTxt(d)} versus ${nm}. Common reasons: fatigue, heat, little sleep, an oncoming cold.`))}
-        else cmp+=T(` Effizienz im Rahmen (${pctTxt(d)}).`,` Efficiency within the usual range (${pctTxt(d)}).`)}
+        if(d>=3){bo+=1;plus.push(T(`${eN} ${pctTxt(d)} gegenüber ${nm}: bei gleichem Puls schneller${eg==='thr'?' an der Schwelle':''}.`,`${eN} ${pctTxt(d)} versus ${nm}: faster at the same heart rate${eg==='thr'?' at threshold':''}.`))}
+        else if(d<=-4){lo+=1;minus.push(T(`${eN} ${pctTxt(d)} gegenüber ${nm}. Häufige Gründe: Müdigkeit, Hitze, wenig Schlaf, beginnende Erkältung.`,`${eN} ${pctTxt(d)} versus ${nm}. Common reasons: fatigue, heat, little sleep, an oncoming cold.`))}
+        else cmp+=T(` ${eN} im Rahmen (${pctTxt(d)}).`,` ${eN} within the usual range (${pctTxt(d)}).`)}
+      // threshold and marathon pace: name the numbers of the last comparable block
+      if((eg==='thr'||eg==='mp')&&ef){const q=[...prev].reverse().find(o=>effBlk(o.l));if(q)cmp+=T(` ${eg==='thr'?'Schwelle':'Marathontempo'} heute ${pace(l.pace)} bei Puls ${l.hr}, am ${fshort(q.date)} ${pace(q.l.pace)} bei Puls ${q.l.hr}.`,` ${eg==='thr'?'Threshold':'Marathon pace'} today ${pace(l.pace)} at HR ${l.hr}, on ${fshort(q.date)} ${pace(q.l.pace)} at HR ${q.l.hr}.`)}
       else if(pv&&aG&&l.rpe&&aR){const d=(aG/pv-1)*100;
         if(d>=3&&l.rpe<=aR+.5){bo+=.5;plus.push(T(`${pctTxt(d)} schneller als ${nm} bei gleicher Anstrengung.`,`${pctTxt(d)} faster than ${nm} at the same effort.`))}
         else if(d<=-4&&l.rpe>=aR-.5){lo+=.5;minus.push(T(`${pctTxt(-d).replace('+','')} langsamer als ${nm} bei gleicher Anstrengung.`,`${pctTxt(-d).replace('+','')} slower than ${nm} at the same effort.`))}}
@@ -130,9 +134,11 @@ function rateRun(l,date,shallow){
       hist=prev.slice(-4).map(o=>{const r=fbFull(o.l,o.date);return r&&r.score}).filter(x=>x!=null);
     }else cmp=T(`Erste erfasste Einheit dieser Art («${lab}»). Ab der nächsten gibt es einen Vergleich.`,`First session of this kind («${lab}»). From the next one on, there is a comparison.`);
     // form trend: efficiency of similar runs, else of all continuous runs, over the last 8 weeks
-    const series=g=>fbRuns().filter(o=>daysBetween(o.date,date)>=0&&daysBetween(o.date,date)<=56&&g(o)).map(o=>({x:daysBetween(o.date,date),y:effOf(o.l)})).filter(p=>p.y);
-    let pts=series(o=>(SIMG[ty]||[ty]).includes(logType(o.l))),what=T(`Effizienz bei «${lab}»`,`efficiency in «${lab}»`);
-    if(pts.length<4){pts=series(o=>!isIv(o.l)&&logType(o.l)!=='race');what=T('Effizienz deiner Dauerläufe','efficiency of your continuous runs')}
+    const series=g=>fbRuns().filter(o=>daysBetween(o.date,date)>=0&&daysBetween(o.date,date)<=56&&g(o)).map(o=>({x:daysBetween(o.date,date),y:effAny(o.l)})).filter(p=>p.y);
+    const g0=effGroup(l);let pts=[],what='';
+    if(g0==='thr'||g0==='mp'){pts=series(o=>effGroup(o.l)===g0);what=effName(g0)}
+    else{pts=series(o=>(SIMG[ty]||[ty]).includes(logType(o.l))&&effGroup(o.l)==='base');what=T(`Effizienz bei «${lab}»`,`efficiency in «${lab}»`);
+      if(pts.length<4){pts=series(o=>effGroup(o.l)==='base');what=T('Effizienz deiner lockeren und langen Läufe','efficiency of your easy and long runs')}}
     if(pts.length>=4){const mx=avg(pts.map(p=>p.x)),my=avg(pts.map(p=>p.y));let nu=0,de=0;pts.forEach(p=>{nu+=(p.x-mx)*(p.y-my);de+=(p.x-mx)**2});
       const span=Math.max(...pts.map(p=>p.x)),ch=de?(-nu/de)*span/my*100:0,w=Math.max(1,Math.round(span/7));
       trend=ch>=2?T(`Formverlauf ↗ steigend: ${what} ${pctTxt(ch)} in ${w} Wochen.`,`Form trend ↗ rising: ${what} ${pctTxt(ch)} in ${w} weeks.`)
@@ -166,7 +172,7 @@ function rateRun(l,date,shallow){
   const F=[],add=(k,g,v,w)=>{if(v!=null&&isFinite(v))F.push({k,g,v:clamp(v,1,10),w})};
   const lin=(x,P)=>{if(x<=P[0][0])return P[0][1];for(let i=1;i<P.length;i++)if(x<=P[i][0]){const[x0,y0]=P[i-1],[x1,y1]=P[i];return y0+(y1-y0)*(x-x0)/(x1-x0)}return P[P.length-1][1]};
   const hm=c.hm,rs=hrRest(c.p),ivS=l.impSum&&l.impSum.iv,hillT=ty==='hills'||ty==='fartlek',hrr=h=>(h-rs)/(hm-rs);
-  const spd=o=>{const v=o.impSum&&o.impSum.iv;return logType(o)==='hills'&&v&&v.gap?v.gap:isIv(o)?o.pace:gapOf(o)};
+  const spd=o=>{const v=o.impSum&&o.impSum.iv;return logType(o)==='hills'&&v&&v.gap?v.gap:isIv(o)||isBlk(o)&&blkData(o)?o.pace:gapOf(o)};
   const zk={easy:'Z2',long:'Z2',recovery:'Z1',tempo:'Z4',cruise:'Z4',vo2:'Z5',mpace:'Z3'}[ty];
   const hz=s.hr&&s.type!=='free'?s.hr:zk?c.zones[zk].hr:ty==='rp'?MPB(c.d).hr.map(x=>Math.round(x*hm)):null,mcap=hrMaxCap(ty,s,c);
   // U1) average heart rate in the target range of the session

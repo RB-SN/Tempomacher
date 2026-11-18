@@ -141,6 +141,8 @@ const IVT=new Set(['cruise','vo2','rp','fartlek','hills']);
 const rtOfPlan=t=>RTL[t]?t:'easy';
 const logType=l=>l.type||rtOfPlan(l.s&&l.s.type);
 const isIv=l=>IVT.has(logType(l));
+// tempo run and marathon-pace run: pace and heart rate describe the block, not the whole run
+const BLK=new Set(['tempo','mpace']),isBlk=l=>BLK.has(logType(l));
 const ELEV=[{l:'0–50',m:25},{l:'50–100',m:75},{l:'100–150',m:125},{l:'150–200',m:175},{l:'200–300',m:250},{l:'300–500',m:400},{l:'500+',m:650}];
 const RPEL=['','Sehr leicht','Leicht','Locker','Angenehm','Etwas fordernd','Fordernd','Hart','Sehr hart','Extrem hart','Maximal'];
 const EXPL=[['Keine','Ich fange gerade an'],['Wenig','Ab und zu, unter 1 Jahr'],['Viel','Regelmässig, 1–5 Jahre'],['Sehr viel','Jahrelang, mit Wettkämpfen']];

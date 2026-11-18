@@ -13,17 +13,18 @@ function lapHeader(ln){let s=ln;const cols=[];
   const ks=cols.map(c=>c.k);if(!(ks.includes('time')||ks.includes('cum'))||!(ks.includes('dist')||ks.includes('pace')))return null;
   return cols.sort((a,b)=>a.i-b.i)}
 // row values: times (m:ss, m:ss.d, h:mm:ss), decimals, integers; «5114.4» is OCR for «5:14.4»
-function lapToks(s){const out=[],re=/(\d{1,2}:\d{2}:\d{2}(?:[.,]\d)?)|(\d{1,3}:\d{2}(?:[.,]\d)?)|\b(\d)[1lI|](\d{2})[.,](\d)\b|\b(\d{1,3})['’′](\d{2})(?!\d)(?:["”″]|'')?|((?:\d{1,3}(?:['’]\d{3})+|\d+)(?:[.,]\d+)?)/g;let m;
-  while((m=re.exec(s))){if(m[6]){out.push({k:'t',v:+m[6]*60+ +m[7]});continue}if(m[1]||m[2])out.push({k:'t',v:parseDur((m[1]||m[2]).replace(/[.,]\d$/,''))+(/[.,](\d)$/.test(m[1]||m[2])?+(m[1]||m[2]).slice(-1)/10:0)});
+// «1711.7» is OCR for «17:11.7» (colon lost); only with a 4-digit whole part, seconds below 60
+function lapToks(s){const out=[],re=/(\d{1,2}:\d{2}:\d{2}(?:[.,]\d)?)|(\d{1,3}:\d{2}(?:[.,]\d)?)|\b(\d)[1lI|](\d{2})[.,](\d)\b|\b(\d{1,3})['’′](\d{2})(?!\d)(?:["”″]|'')?|\b(\d{2})([0-5]\d)[.,](\d)\b|((?:\d{1,3}(?:['’]\d{3})+|\d+)(?:[.,]\d+)?)/g;let m;
+  while((m=re.exec(s))){if(m[6]){out.push({k:'t',v:+m[6]*60+ +m[7]});continue}if(m[8]){out.push({k:'t',v:+m[8]*60+ +m[9]+ +m[10]/10});continue}if(m[1]||m[2])out.push({k:'t',v:parseDur((m[1]||m[2]).replace(/[.,]\d$/,''))+(/[.,](\d)$/.test(m[1]||m[2])?+(m[1]||m[2]).slice(-1)/10:0)});
     else if(m[3])out.push({k:'t',v:+m[3]*60+ +m[4]+ +m[5]/10});
-    else{const raw=m[8];out.push({k:/[.,]\d/.test(raw)?'d':'i',v:shotNum(raw),raw})}}
+    else{const raw=m[11];out.push({k:/[.,]\d/.test(raw)?'d':'i',v:shotNum(raw),raw})}}
   return out}
 function shotLaps(lines){const laps=[];let H=null,miss=0;
   lines.forEach(ln=>{const h=lapHeader(ln);if(h){H=h;miss=0;return}if(!H)return;
     const tk=lapToks(ln);if(tk.filter(t=>t.k==='t').length<1||tk.length<2){if(++miss>2)H=null;return}miss=0;
     let ty=null;for(const[k,re]of LAP_TY)if(re.test(ln)){ty=k;break}
     const total=LAP_TOT.test(ln),o={type:ty,total};let q=0;
-    while(q<tk.length&&tk[q].k==='i'&&tk[q].v<100)q++; // lap / interval number
+    while(q<tk.length&&tk[q].k==='i'&&tk[q].v<100){o.num=tk[q].v;q++} // lap / interval number
     for(const c of H){if(q>=tk.length)break;const t=tk[q];
       if(c.kind==='t'){if(t.k==='i'&&t.v>=100&&t.v<=5959&&t.v%100<60&&tk[q+1]&&tk[q+1].k!=='i'){o[c.k]=Math.floor(t.v/100)*60+t.v%100;q++;continue} // «100» is OCR for «1'00»
         if(t.k!=='t')continue;o[c.k]=t.v;q++}
@@ -36,13 +37,18 @@ function shotLaps(lines){const laps=[];let H=null,miss=0;
     if(o.time&&(o.dist||o.pace))laps.push(o)});
   // summary row of a filtered view: last row whose time is the sum of the others (Garmin: time = cumulative time)
   if(laps.length>=3){const L=laps[laps.length-1],rest=laps.slice(0,-1),sum=rest.reduce((a,r)=>a+(r.time||0),0);if(!L.total&&Math.abs(L.time-sum)<=1.5&&(L.cum==null||Math.abs(L.cum-L.time)<1))L.total=true}
+  // scrolled filter view: last row without a number, total time = its own cumulative time and longer than every lap shown
+  if(laps.length>=2){const L=laps[laps.length-1];if(!L.total&&L.num==null&&L.cum!=null&&Math.abs(L.cum-L.time)<1&&laps.slice(0,-1).every(r=>r.num!=null&&r.time<L.time))L.total=true}
+  // Garmin interval row above its laps («1 16:00.0 29:13.7 4.03 …» then «4 3:58.0 17:11.7 1.00 …»): same start, longer → the interval itself
+  laps.forEach((r,i)=>{const n=laps[i+1];if(n&&!r.total&&!n.total&&r.cum!=null&&n.cum!=null&&Math.abs((r.cum-r.time)-(n.cum-n.time))<1.5&&r.time>n.time+2)r.grp=true});
   return laps}
 // all lap rows of all screenshots → one sequence with types; returns intervals, recoveries and (if complete) the whole activity
 function ivSummary(v){const r=v.rec;
-  return T(`${v.n===1?'Tempoabschnitt':'Intervalle'} erkannt: <b>${v.n===1?v.rep:v.n+' × '+v.rep}</b> · Belastung Ø ${pace(v.pace)}${v.gap?` (an Steigung angepasst ${pace(v.gap)})`:''}${v.hr?' · Ø HF '+v.hr:''}${v.hrMax?' (max '+v.hrMax+')':''}${v.gain!=null?' · ↗ '+v.gain+' hm in den Belastungen':''}${r?`<br>Erholung ${r.n} × ${fmtTime(r.t)}${r.hr?' · Ø HF '+r.hr:''}`:''}${v.warm||v.cool?`<br>${[v.warm&&'Einlaufen',v.cool&&'Auslaufen'].filter(Boolean).join(' und ')} erkannt`:''}`,
-    `${v.n===1?'Tempo section':'Intervals'} recognised: <b>${v.n===1?v.rep:v.n+' × '+v.rep}</b> · work avg. ${pace(v.pace)}${v.gap?` (grade-adjusted ${pace(v.gap)})`:''}${v.hr?' · avg. HR '+v.hr:''}${v.hrMax?' (max '+v.hrMax+')':''}${v.gain!=null?' · ↗ '+v.gain+' m in the reps':''}${r?`<br>Recovery ${r.n} × ${fmtTime(r.t)}${r.hr?' · avg. HR '+r.hr:''}`:''}${v.warm||v.cool?`<br>${[v.warm&&'warm-up',v.cool&&'cool-down'].filter(Boolean).join(' and ')} recognised`:''}`)}
+  return T(`${v.n===1?'Tempoabschnitt':'Intervalle'} erkannt: <b>${v.n===1?v.rep:v.n+' × '+v.rep}</b> · Belastung Ø ${pace(v.pace)}${v.gap&&Math.abs(v.gap-v.pace)>=2?` (an Steigung angepasst ${pace(v.gap)})`:''}${v.hr?' · Ø HF '+v.hr:''}${v.hrMax?' (max '+v.hrMax+')':''}${v.gain!=null?' · ↗ '+v.gain+' hm in den Belastungen':''}${r?`<br>Erholung ${r.n} × ${fmtTime(r.t)}${r.hr?' · Ø HF '+r.hr:''}`:''}${v.warm||v.cool?`<br>${[v.warm&&'Einlaufen',v.cool&&'Auslaufen'].filter(Boolean).join(' und ')} erkannt`:''}`,
+    `${v.n===1?'Tempo section':'Intervals'} recognised: <b>${v.n===1?v.rep:v.n+' × '+v.rep}</b> · work avg. ${pace(v.pace)}${v.gap&&Math.abs(v.gap-v.pace)>=2?` (grade-adjusted ${pace(v.gap)})`:''}${v.hr?' · avg. HR '+v.hr:''}${v.hrMax?' (max '+v.hrMax+')':''}${v.gain!=null?' · ↗ '+v.gain+' m in the reps':''}${r?`<br>Recovery ${r.n} × ${fmtTime(r.t)}${r.hr?' · avg. HR '+r.hr:''}`:''}${v.warm||v.cool?`<br>${[v.warm&&'warm-up',v.cool&&'cool-down'].filter(Boolean).join(' and ')} recognised`:''}`)}
 function lapAnalysis(lists){
-  const A=[],B=[];lists.forEach(ls=>{const rows=ls.filter(r=>!r.total);if(rows.some(r=>r.cum!=null))rows.forEach(r=>{if(r.cum!=null&&!A.some(a=>Math.abs(a.cum-r.cum)<1))A.push({...r})});else B.push(rows)});
+  const A=[],B=[],G=[];lists.forEach(ls=>{const rows=ls.filter(r=>!r.total);if(rows.some(r=>r.cum!=null))rows.forEach(r=>{if(r.cum==null)return;const P=r.grp?G:A;if(!P.some(a=>Math.abs(a.cum-r.cum)<1))P.push({...r})});else B.push(rows)});
+  if(G.length){G.forEach(g=>{const s=g.cum-g.time;for(let k=A.length-1;k>=0;k--){const a=A[k];if(a.cum-a.time>=s-1.5&&a.cum<=g.cum+1.5)A.splice(k,1)}g.grp=true;A.push(g)})}
   A.sort((a,b)=>a.cum-b.cum);
   const same=(a,b)=>Math.abs(a.time-b.time)<1.2&&(a.dist==null||b.dist==null||Math.abs(a.dist-b.dist)<=.015)&&(!a.pace||!b.pace||Math.abs(a.pace-b.pace)<=2);
   let L;
@@ -50,16 +56,18 @@ function lapAnalysis(lists){
     // a filtered list (only one type) without labels: if its rows match, the whole list gets that type
     lists.forEach(ls=>{const ty=[...new Set(ls.filter(r=>!r.total).map(r=>r.type))];if(ty.length===1&&ty[0])ls.forEach(r=>{const m=L.find(a=>!a.type&&r.cum!=null&&Math.abs(a.cum-r.cum)<1);if(m)m.type=ty[0]})})}
   else{L=[];B.forEach((rows,bi)=>{const base=L.length;rows.forEach(r=>{if(!(bi>0&&L.slice(0,base).some(a=>a.type===r.type&&same(a,r))))L.push({...r})})})}
-  if(L.length<2)return null;
+  if(L.length<2&&!(L.length===1&&L[0].grp&&L[0].time>=480))return null;
   // fill in missing types: between work rows = recovery, before = warm-up, after = cool-down
   let wi=L.map((r,i)=>r.type==='work'?i:-1).filter(i=>i>=0);
   if(wi.length<2){// no labels: the repeated, clearly harder rows are the work rows
-    const bins={};L.forEach((r,i)=>{if(r.dist&&Math.abs(r.dist-1)<.005&&!r.type)return;const k=Math.round(r.time/5);(bins[k]=bins[k]||[]).push(i)});
-    const cand=Object.values(bins).filter(g=>g.length>=3).map(g=>({g,sc:avg(g.map(i=>L[i].hr||0))*2-avg(g.map(i=>L[i].pace||600))/10})).sort((a,b)=>b.sc-a.sc)[0];
+    // 1-km rows may be auto-laps: as reps only if something else lies between them (1000-m intervals with recoveries)
+    const km1=i=>L[i].dist&&Math.abs(L[i].dist-1)<.005,bins={};L.forEach((r,i)=>{const k=Math.round(r.time/5);(bins[k]=bins[k]||[]).push(i)});
+    const cand=Object.values(bins).filter(g=>g.length>=3&&!(g.every(km1)&&g.some((x,j)=>j&&x===g[j-1]+1))).map(g=>({g,sc:avg(g.map(i=>L[i].hr||0))*2-avg(g.map(i=>L[i].pace||600))/10})).sort((a,b)=>b.sc-a.sc)[0];
     if(cand){const others=L.filter((r,i)=>!cand.g.includes(i)),fast=avg(cand.g.map(i=>L[i].pace||0))<avg(others.map(r=>r.pace||0))*.97||avg(cand.g.map(i=>L[i].hr||0))>avg(others.map(r=>r.hr||0))+8;
       if(fast)cand.g.forEach(i=>L[i].type='work')}
     wi=L.map((r,i)=>r.type==='work'?i:-1).filter(i=>i>=0)}
-  if(wi.length<2&&!(wi.length===1&&L[wi[0]].time>=480&&L.some(r=>r.type==='warm'||r.type==='cool')))return null;
+  if(!wi.length){const g=L.filter(r=>r.grp&&r.pace),o=L.filter(r=>!r.grp&&r.pace);if(g.length&&!o.length&&g.every(r=>r.time>=480)){g.forEach(r=>r.type='work');wi=L.map((r,i)=>r.type==='work'?i:-1).filter(i=>i>=0)}else if(g.length&&o.length&&avg(g.map(r=>r.pace))<avg(o.map(r=>r.pace))*.95){g.forEach(r=>r.type='work');wi=L.map((r,i)=>r.type==='work'?i:-1).filter(i=>i>=0)}}
+  if(wi.length<2&&!(wi.length===1&&L[wi[0]].time>=480&&(L.some(r=>r.type==='warm'||r.type==='cool')||wi[0]>0||wi[0]<L.length-1||L[wi[0]].grp)))return null;
   L.forEach((r,i)=>{if(r.type)return;r.type=i<wi[0]?'warm':i>wi[wi.length-1]?'cool':'rec'});
   const W=L.filter(r=>r.type==='work'),R=L.filter(r=>r.type==='rec'),wt=W.reduce((a,r)=>a+r.time,0),wd=W.every(r=>r.dist)?W.reduce((a,r)=>a+r.dist,0):null;
   const wavg=(rs,k)=>{const h=rs.filter(r=>r[k]);return h.length?Math.round(h.reduce((a,r)=>a+r[k]*r.time,0)/h.reduce((a,r)=>a+r.time,0)):null};
@@ -77,10 +85,12 @@ function lapAnalysis(lists){
   if(tot){const hs=L.filter(r=>r.hr);if(hs.length===L.length)tot.hr=wavg(L,'hr');if(L.every(r=>r.hrMax)||L.filter(r=>r.type==='work').length&&L.filter(r=>r.type==='work').every(r=>r.hrMax))tot.hrMax=Math.max(...L.map(r=>r.hrMax||0))}
   return{iv,tot,laps:L}}
 function parseShot(text,ref){
-  const lines=text.replace(/[|¦]/g,' ').split(/\n/).map(l=>l.replace(/\s+/g,' ').trim()).filter(Boolean);
-  const F={};
+  // «8. 54 km»: OCR space after the decimal point of a big number
+  const lines=text.replace(/[|¦]/g,' ').replace(/(\d)[.,] (\d{2})(?= ?(?:km|mi)\b)/g,'$1.$2').split(/\n/).map(l=>l.replace(/\s+/g,' ').trim()).filter(Boolean);
+  const F={},hdrI=shotLaps(lines).length>=2?lines.findIndex(l=>lapHeader(l)):-1;
   // label lines: pair labels with values in the same line or a neighbouring line (two-column layouts pair by order)
   lines.forEach((ln,i)=>{
+    if(hdrI>=0&&i>=hdrI)return; // inside a lap table: column labels and lap values are not totals of the run
     let rest=ln;const labs=[];
     for(const[k,re]of SHOT_LAB){const m=rest.match(re);if(m){labs.push({k,i:m.index});rest=rest.slice(0,m.index)+' '.repeat(m[0].length)+rest.slice(m.index+m[0].length)}}
     if(!labs.length)return;labs.sort((a,b)=>a.i-b.i);
@@ -96,7 +106,8 @@ function parseShot(text,ref){
   });
   const LAPS=shotLaps(lines),lapTot=LAPS.find(r=>r.total),lapTy=new Set(LAPS.filter(r=>!r.total).map(r=>r.type).filter(Boolean));
   // a labelled «all sections» list with a total row: that total is the whole activity
-  if(lapTot&&(lapTy.has('warm')||lapTy.has('cool'))&&lapTy.size>=2){if(F.dist==null&&lapTot.dist)F.dist=lapTot.dist;if(F.time==null&&F.mov==null)F.time=lapTot.time;if(F.hr==null&&lapTot.hr)F.hr=lapTot.hr}
+  const allTot=lapTot&&(lapTy.has('warm')||lapTy.has('cool'))&&lapTy.size>=2;
+  if(allTot){if(F.dist==null&&lapTot.dist)F.dist=lapTot.dist;if(F.time==null&&F.mov==null)F.time=lapTot.time;if(F.hr==null&&lapTot.hr)F.hr=lapTot.hr}
   const LA=LAPS.length>=2?lapAnalysis([LAPS]):null;
   // splits / laps: rows starting with a lap number and containing a pace (not when the lap table already gave the intervals)
   const rows=[];let want=1;if(LA)want=1e9;
@@ -138,6 +149,8 @@ function parseShot(text,ref){
   if(F.pace==null){const p=all.find(t=>t.k==='p'&&t.v>=120&&t.v<=900);if(p&&!rows.length)F.pace=p.v}
   if(F.mov==null&&F.time==null){const t=all.filter(t=>t.k==='t'&&t.v>=600).sort((a,b)=>b.v-a.v)[0];if(t)F.time=t.v}
   if(F.hr==null&&rows.length&&rows.every(r=>r.hr)){const tw=r=>r.time||r.pace;F.hr=Math.round(rows.reduce((x,r)=>x+r.hr*tw(r),0)/rows.reduce((x,r)=>x+tw(r),0))}
+  // Garmin filter view («Abschnitttyp wählen» → Warm up / Laufen / Erholung / Cool Down): its rows are one part of the run, never the whole
+  if(!allTot&&LAPS.length>=2&&/abschnit+\s*typ|step\s*type|segment\s*type/i.test(text)){F.dist=F.time=F.mov=F.hr=F.pace=null}
   if(F.gain!=null&&!/anstieg|ascent|aufstieg|h[öo]henmeter|elevation\s*gain|total\s*ascent|h[öo]hengewinn/i.test(text)&&lines.filter(l=>/^\d{2,4}$/.test(l)).length>=3)F.gain=null;
   let mov=F.mov||F.time||null,km=F.dist!=null?Math.round(F.dist*100)/100:null,pace=F.pace||null;
   let sport=sportOfText(text);if(!sport&&(F.speed>24||(mov&&km&&mov/km<150&&mov/km>=40)))sport='bike';const altS=sport&&sport!=='run';
@@ -402,13 +415,13 @@ function lfFromImport(a,want){
   const pl=planSession(a.date),logged=S.logs[a.date];
   const toPlan=pl&&pl.type!=='rest'&&pl.type!=='alt'&&!logged&&a.date>=S.plan.startMonday;
   if(a.ser)applyPlanFit(a,toPlan?plannedFor(a.date)||pl:null);
-  const type=guessType(a,toPlan?pl:null),iv=IVT.has(type)||!!a.iv&&a.iv.n===1&&(type==='tempo'||type==='mpace'),noWork=iv&&!a.iv;
+  const type=guessType(a,toPlan?pl:null),iv=IVT.has(type)||BLK.has(type),noWork=iv&&!a.iv;
   L={sec:a.mov?fmtTime(a.mov):'',wsec:a.iv&&a.iv.wt?fmtTime(a.iv.wt):'',mode:toPlan?'plan':'extra',assign:'plan',date:a.date,kind:'run',type,km:a.km?String(a.km):'',pace:noWork?'':(iv&&a.iv?a.iv.pace:a.avgPace)?fmtPace(iv&&a.iv?a.iv.pace:a.avgPace):'',hr:noWork?'':(iv&&a.iv?a.iv.hr:a.avgHr)||'',elev:a.gain!=null?elevIdx(a.gain):null,gain:a.gain!=null?String(a.gain):'',hrMax:a.hrMax?String(a.hrMax):'',rpe:null,dur:'',sport:'',imp:a,h1p:'',h1h:'',h2p:'',h2h:''};
   if(type==='mptest')lfPrefill(L);
   if(want&&a.dateFound&&a.date!==want&&want<=today())L.dateAsk={plan:want,found:a.date};
   return L}
 // values from the import for the chosen run type (intervals: work phases; race-pace test: the test section from the splits)
-function lfPrefill(f){const a=f.imp;if(!a)return;const v=f.type,iv=IVT.has(v)||!!a.iv&&a.iv.n===1&&(v==='tempo'||v==='mpace'),nw=IVT.has(v)&&!a.iv;
+function lfPrefill(f){const a=f.imp;if(!a)return;const v=f.type,iv=IVT.has(v)||BLK.has(v),nw=iv&&!a.iv;
   if(v==='mptest'){const pl=f.mode==='plan'?plannedFor(f.date):null,tp=pl&&pl.type==='mptest'&&pl.pace?mid2(pl.pace):ctxFor(S).pc.RP,sg=testSeg(a.splits,tp);f.seg=sg;
     if(sg){f.pace=fmtPace(sg.pace);f.hr=sg.hr||'';if(sg.h){f.h1p=fmtPace(sg.h[0]);f.h1h=sg.h[1];f.h2p=fmtPace(sg.h[2]);f.h2h=sg.h[3]}}else{f.pace='';f.hr=''}return}
   f.seg=null;const pv=iv&&a.iv?a.iv.pace:a.avgPace;f.pace=nw||!pv?'':fmtPace(pv);f.hr=nw?'':(iv&&a.iv?a.iv.hr:a.avgHr)||'';if(a.hrMax&&!f.hrMax)f.hrMax=String(a.hrMax)}

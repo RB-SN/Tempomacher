@@ -1,5 +1,24 @@
 # Versionsverlauf
 
+## 3.2.2 – November 2026
+
+- **Garmin-Screenshots mit Abschnitt-Filtern:** Die Ansichten «Warm up», «Laufen», «Erholung» und «Cool Down» der Garmin Connect App werden jetzt richtig zusammengesetzt, auch wenn die Texterkennung den gewählten Filter nicht lesen kann. Die Intervall-Zeile (z. B. «1 · 16:00.0 · 4.03 km») ersetzt ihre Kilometer-Runden; gescrollte Tabellen und ihre Summenzeile werden erkannt; «1711.7» wird als 17:11.7 gelesen; «8. 54 km» als 8.54 km.
+- Ein Filter-Screenshot liefert nie mehr Distanz, Zeit oder Puls des ganzen Laufs (vorher konnte z. B. das Einlaufen als ganzer Lauf gelten).
+- 1000-m-Intervalle werden auch erkannt, wenn sie wie Kilometer-Runden aussehen, sofern Erholungen dazwischen liegen.
+- Dauer: Die genaue Gesamtzeit aus der Runden-Tabelle hat Vorrang vor der aus Distanz × Pace gerechneten.
+- Kachel **«Meilensteine»** statt «Serie»: Anzahl erreichter Meilensteine und der nächste (z. B. «→ 25 Läufe»). Die Serie steht weiterhin in den Details.
+- Kachel «Effizienz» sagt, was für den Trend noch fehlt («4 von 6 lockeren Läufen mit Puls» bzw. «noch 1 Wo. bis zum Trend»).
+- Begriffe: «Dauerläufe» heisst bei der Effizienz jetzt «lockere und lange Läufe»; nach dem Import «Gleichmässiger Lauf, keine Intervalle erkannt».
+
+## 3.2.1 – November 2026
+
+- **Fehler behoben (Effizienz beim Tempodauerlauf):** Die Effizienz rechnete mit der Pace des ganzen Laufs, aber dem Puls des Tempoblocks, und floss in den Effizienz-Trend der lockeren Läufe ein.
+- **Drei getrennte Effizienz-Werte:** *Effizienz* nur aus lockeren, langen und regenerativen Läufen (Trend in «Fortschritt»); *Schwellen-Effizienz* aus Tempodauerlauf und Schwellenintervallen, nur Block bzw. Belastungen; *Marathontempo-Effizienz* aus Marathontempo-Lauf und Renntempo-Test. VO₂max-, Renntempo- und Bergintervalle, Fahrtspiel und Wettkämpfe haben keine Effizienz mehr (Puls hinkt hinterher).
+- Feedback bei Schwelle und Marathontempo nennt die Zahlen direkt: «Schwelle heute 3:57 /km bei Puls 171, am 12.11. 4:02 /km bei Puls 172».
+- Effizienz-Diagramm: in der ausführlichen Ansicht zusätzlich eine Linie für Schwelle (und Marathontempo) mit eigenem Trend.
+- Erfassen von Tempodauerlauf und Marathontempo-Lauf: Die Felder heissen jetzt «Ø Pace im Tempoblock», «Ø Puls im Tempoblock» und «Dauer Tempoblock». Beim Import wird nie mehr der Durchschnitt des ganzen Laufs als Block eingetragen; ohne erkannten Block weist die App auf «Belastung selbst markieren» hin.
+- Ältere Tempodauerläufe, bei denen unklar ist, ob Pace und Puls vom Block oder vom ganzen Lauf stammen, werden nur noch untereinander verglichen.
+
 ## 3.2.0 – November 2026
 
 - **Belastungen ohne Runden erkennen:** GPX-Dateien (z. B. aus Garmin Connect) enthalten keine Runden. Die App sucht jetzt nach der **geplanten Einheit**: «16 min am Stück», «6 × 1000 m», «2 × 8 min», «1-2-3-2-1 km», «2 × (5 × 400 m)», «6 km im Marathontempo» usw. Wurden weniger Wiederholungen gelaufen, zeigt sie z. B. «5 von 6 Belastungen gefunden». Die Runden der Uhr (FIT/TCX) haben weiterhin Vorrang.

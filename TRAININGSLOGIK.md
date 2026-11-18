@@ -270,7 +270,12 @@ Gelten die Abschnitte als Intervalle, zählen nur die Belastungsphasen. Beim Pul
 
 ## 10. Formwerte
 
-- **Effizienz-Index** = Geschwindigkeit (km/h) ÷ genutzte Herzfrequenzreserve, also (HF − Ruhepuls) ÷ (HFmax − Ruhepuls). Dauerläufe werden höhenbereinigt, bei Intervallen zählen nur die Belastungsphasen. Bergintervalle und Wettkämpfe fliessen nicht ein.
+- **Effizienz-Index** = Geschwindigkeit (km/h) ÷ genutzte Herzfrequenzreserve, also (HF − Ruhepuls) ÷ (HFmax − Ruhepuls). Es gibt drei getrennte Werte, die nur untereinander verglichen werden:
+  - **Effizienz** (Grundlage): lockere, lange und regenerative Läufe, ganzer Lauf, höhenbereinigt. Nur sie bildet den Effizienz-Trend in «Fortschritt», weil der Puls bei ruhigem, gleichmässigem Laufen stabil ist.
+  - **Schwellen-Effizienz:** Tempodauerlauf und Schwellenintervalle, nur Pace und Puls des Blocks bzw. der Belastungen. Zeigt, ob das Schwellentempo bei gleichem Puls schneller wird.
+  - **Marathontempo-Effizienz:** Marathontempo-Lauf und Renntempo-Test, nur Block bzw. Testabschnitt.
+  - Keine Effizienz bei VO₂max-Intervallen, Renntempo-Intervallen, Fahrtspiel, Bergintervallen und Wettkämpfen: Bei kurzen, harten Wiederholungen hinkt der Puls hinterher. Bewertet werden Tempo, Gleichmässigkeit und Anstrengung.
+  - Ein Mittel über den ganzen Tempolauf (mit Ein- und Auslaufen) wird nie verwendet: Es hängt vor allem davon ab, wie lange ein- und ausgelaufen wurde.
 - **Decoupling** (Long Runs über 15 km): Verhältnis Tempo/Puls in der 1. gegen die 2. Hälfte, nach 10 Minuten Einlaufen. Unter 5 % gilt als gute aerobe Grundlage.
 - **Trainingsbelastung:** Dauer × Anstrengung (Session-RPE nach Foster), verglichen mit dem Schnitt der 4 Wochen davor. Ein Verhältnis von 0.8–1.3 gilt als sicher.
 - **Wochenumfang:** Ziegelmauer der letzten 4 Wochen.
@@ -294,13 +299,13 @@ Nach jedem erfassten Lauf bewertet Tempomacher die Einheit mit einer Note von 1 
 | Puls | Zielbereich bzw. % HFmax (Easy bis 79 %, Long bis 80 %, Recovery bis 72 %) | im Bereich +0.5, darüber −1 |
 | Anstrengung | erwartete RPE je Laufart (Foster) | passend +0.5, deutlich höher −1 |
 | Decoupling (Long Runs) | unter 5 % gilt als gute aerobe Grundlage (Friel) | unter 5 % +1, über 8 % −1 |
-| Vergleich | Effizienz-Index gegenüber den letzten bis zu 6 gleichartigen Einheiten (180 Tage), nur bei ähnlichem Puls (±8) | +3 % oder mehr +1, −4 % oder weniger −1; ohne Puls: Pace bei gleicher Anstrengung ±0.5 |
+| Vergleich | Effizienz-Index der passenden Gruppe (siehe oben) gegenüber den letzten bis zu 6 gleichartigen Einheiten (180 Tage), nur bei ähnlichem Puls (±8) | +3 % oder mehr +1, −4 % oder weniger −1; ohne Puls: Pace bei gleicher Anstrengung ±0.5 |
 
 Paces von Dauerläufen werden nur bei hügeligen Läufen höhenbereinigt: gezählt wird der Anstieg über 1 % der Distanz (z. B. über 56 m auf 5.6 km), davon die Hälfte mit 8 m Zusatzstrecke pro Höhenmeter, weil man abwärts einen Teil wieder aufholt. Genaue Höhenmeter aus Screenshot oder Datei haben Vorrang vor der Höhenmeter-Klasse. Gleichartig heisst gleiche Laufart; gibt es davon weniger als zwei, werden verwandte Arten herangezogen (z. B. Easy und Recovery, Tempodauerlauf und Schwellenintervalle, VO₂max- und Renntempo-Intervalle).
 
 **Urteil:** Ganz oben steht ein Satz aus Note und den wichtigsten Minuspunkten, z. B. «Solide, aber zu schnell» oder «Starke Einheit, genau so war sie gedacht».
 
-**Formverlauf:** lineare Entwicklung des Effizienz-Index der gleichartigen Läufe (sonst aller Dauerläufe) in den letzten 8 Wochen; ab ±2 % steigend bzw. fallend.
+**Formverlauf:** lineare Entwicklung des Effizienz-Index der gleichartigen Läufe (sonst aller lockeren und langen Läufe; bei Schwelle und Marathontempo der Schwellen- bzw. Marathontempo-Effizienz) in den letzten 8 Wochen; ab ±2 % steigend bzw. fallend.
 
 **Rennen** werden an der Zielzeit gemessen, sonst an der Prognose (bis 2 % schneller = 10, im Ziel = 9, 2 % langsamer = 8 …). **Testläufe** erhalten keine Note.
 

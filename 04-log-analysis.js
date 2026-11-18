@@ -34,7 +34,7 @@ function analyze(l){
   }
   if(ty==='test'&&l.refSet)out.msgs.push(`Testlauf ausgewertet: ${fk(l.km)} km in ${fmtTime(l.sec||l.pace*l.km)}. Pace und Zonen sind jetzt darauf abgestimmt.`);
   if(l.dec!=null)out.msgs.push(`Decoupling ${fk(+l.dec.toFixed(1))} %: ${l.dec<5?'unter 5 %, deine aerobe Grundlage trägt über die ganze Distanz.':'der Puls stieg in der zweiten Hälfte deutlich an. Häufige Gründe: zu schneller Start, Wärme, zu wenig getrunken, oder die Grundlage für diese Länge braucht noch Zeit.'}`);
-  const ef=effOf(l);if(ef)out.msgs.push(`Effizienz-Index ${f2(ef)}${l.interval?' (nur Belastungsphasen)':''}.`);
+  const ef=effAny(l),eg=effGroup(l);if(ef)out.msgs.push(`${eg==='base'?'Effizienz-Index':effName(eg)} ${f2(ef)}${eg!=='base'?' (nur Belastung)':''}.`);
   if(l.rpe>E[1]+1)out.msgs.push(`Anstrengung ${l.rpe}/10 ist höher als für diese Einheit erwartet (${E[0]}–${E[1]}).`);
   else if(l.rpe<E[0]-1&&qual)out.msgs.push(`Anstrengung ${l.rpe}/10 ist tiefer als erwartet. Fühlt sich das öfter so an, zieht der Plan an.`);
   out.strain=clamp(strain,-2,3);

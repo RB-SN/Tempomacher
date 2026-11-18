@@ -37,7 +37,7 @@ function mergeShots(rs){
   const lapImg=[...rs].sort((a,b)=>b.rows-a.rows)[0];
   // laps from another activity? different dates or a lap sum that does not fit the total: then ignore the laps
   const ds=[...new Set(rs.filter(r=>r.date&&(r.lab>=2||r.rows>=2)).map(r=>r.date))],sumKm=order[0].km;
-  m.warn=[];if(lapImg!==order[0]&&lapImg.rows>=2){
+  m.warn=[];if(lapImg!==order[0]&&lapImg.rows>=2&&rs.filter(r=>r.laps&&r.laps.length>=2).length<=1){
     if(lapImg.date&&order[0].date&&lapImg.date!==order[0].date)m.warn.push({k:'dates',a:order[0].date,b:lapImg.date});
     else if(lapImg.lapKm&&sumKm&&Math.abs(lapImg.lapKm-sumKm)/sumKm>.08)m.warn.push({k:'lapsum',a:sumKm,b:lapImg.lapKm})}
   const lapsOk=!m.warn.length;void ds;
@@ -45,7 +45,7 @@ function mergeShots(rs){
   m.rows=Math.max(...rs.map(r=>r.rows));m.kw=(rs.find(r=>r.kw)||{}).kw||null;
   // interval tables over several screenshots (e.g. Garmin filters «Warm up», «Laufen», «Erholung», «Cool Down»)
   const LL=rs.map(r=>r.laps).filter(Boolean);if(LL.length&&!m.warn.some(w=>w.k==='dates')){const LA=lapAnalysis(LL);if(LA){m.iv=LA.iv;m.dec=null;
-    if(LA.tot){if(m.km==null)m.km=LA.tot.km;if(m.mov==null)m.mov=LA.tot.mov;if(m.avgHr==null&&LA.tot.hr)m.avgHr=LA.tot.hr;if(m.hrMax==null&&LA.tot.hrMax)m.hrMax=LA.tot.hrMax}}}
+    if(LA.tot){if(m.km==null)m.km=LA.tot.km;if(m.mov==null||Math.abs(LA.tot.mov-m.mov)<=m.mov*.01)m.mov=LA.tot.mov;if(m.avgHr==null&&LA.tot.hr)m.avgHr=LA.tot.hr;if(m.hrMax==null&&LA.tot.hrMax)m.hrMax=LA.tot.hrMax}}}
   if(m.km==null){const r=rs.find(x=>x.km!=null);if(r)m.km=r.km}
   if(!altS&&m.mov&&m.km&&(m.mov/m.km<150||m.mov/m.km>1200))m.mov=null;
   if(!m.mov&&m.avgPace&&m.km)m.mov=Math.round(m.avgPace*m.km);
@@ -386,7 +386,7 @@ function renderTabs(){
   t.innerHTML=`<div class="in">${tabs.map(([k,l])=>`<button data-act="tab" data-v="${k}" ${ui.tab===k?'aria-current="page"':''}>${ICONS[k]}${l}</button>`).join('')}</div>`;
 }
 function render(){try{renderInner();addInfo($('#app'))}catch(e){showFatal((e&&e.stack)||e)}}
-const APP_VER='3.2.0';
+const APP_VER='3.2.2';
 const footer=()=>`<footer class="copy">© ${new Date().getFullYear()} Ramon Betschart. Alle Rechte vorbehalten.<br><span style="opacity:.7">Version ${APP_VER}</span></footer>`;
 function renderInner(){
   if(S)migrate();

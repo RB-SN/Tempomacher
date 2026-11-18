@@ -362,13 +362,13 @@ Bei Hitze steigt der Puls bei gleichem Tempo. Mit «Heiss» im Check-in setzt di
 
 ## Schwelle (gemessen) und Lernen des Leistungsindex
 
-**Schwellenpuls:** aus dem Laktattest (Mitte der Zone 4), sonst Ruhepuls + 89 % der Pulsreserve.
+**Bezugspuls:** aus dem Laktattest (Mitte der Zone 4), sonst der Schwellenpuls deiner Pulsuhr (Profil), sonst der Median des Block-Pulses deiner eigenen Schwelleneinheiten. Ein Laktattest älter als 120 Tage tritt hinter einen neueren Uhrwert zurück. Schwelle ≈ Tempo, das etwa 60 Minuten haltbar ist. Keine Schätzung aus Formeln: Schon wenige Schläge Fehler würden das Tempo stark verfälschen.
 
-**Gemessene Schwelle:** Tempodauerläufe und Schwellenintervalle der letzten 6 Wochen mit Block-Pace (bzw. Belastungen), mindestens 8 Minuten Belastung, Anstrengung höchstens 8/10. Jede Einheit wird über die Schwellen-Effizienz auf den Schwellenpuls umgerechnet (nur wenn der Block-Puls höchstens 12 Schläge davon abweicht). Angezeigt wird der Median der letzten 3; Trend ab 3 Einheiten über mindestens 3 Wochen (Median der ersten gegenüber den letzten).
+**Gemessene Schwelle:** Tempodauerläufe und Schwellenintervalle der letzten 6 Wochen mit Block-Pace (bzw. Belastungen), Anstrengung höchstens 8/10. Wie bei Pulsuhren (Garmin/Firstbeat: mindestens 20 Minuten nahe der Schwelle) zählen Belastungen ab 20 Minuten; nur wenn es keine gibt, solche ab 8 Minuten (als Annäherung gekennzeichnet). Ohne Einheit, aber mit Uhrwert inkl. Tempo: Schwelle = Wert der Uhr. Uhren schätzen das Tempo eher vorsichtig (Studie Fenix 7: rund 12 % langsamer als Feldtest, Puls nur 1.7 % daneben), darum dient nur ihr Puls als Bezug. Kleine Pulsunterschiede zum Bezugspuls (bis 6 Schläge) werden über die Pulsreserve ausgeglichen, höchstens ±3 %; grössere bleiben unverändert. Angezeigt wird der Median der letzten 3; Trend ab 3 Einheiten über mindestens 3 Wochen (Median der ersten gegenüber den letzten).
 
 **Laktattest:** hat Vorrang (Schwelle = Pace der Zone 4, Leistungsindex aus dem Test, kein Lernen aus Training). Älter als 120 Tage: Die Trainingswerte gelten als Schwelle, der Index lernt wieder mit; der Test erscheint als Vergleich.
 
-**Lernen des Leistungsindex (Zwei-Wochen-Auswertung):** Mindestens 2 Einheiten mit Block-Puls höchstens 6 Schläge neben dem Schwellenpuls. Der daraus folgende Index (Schwellentempo ≈ 88 % der VO₂max-Pace, wie bei Laborwerten) liegt mehr als 0.6 über dem aktuellen → +½ der Differenz, höchstens +0.5 pro Auswertung (also höchstens etwa 1 pro Monat); mehr als 1.2 darunter (bei 3 Einheiten) → −0.5. Bei Warnzeichen keine Erhöhung. Zusammen mit der bisherigen Regel aus allen Qualitätseinheiten zählt der grössere Schritt. Gesamtkorrektur aus Training weiterhin −4 bis +6.
+**Lernen des Leistungsindex (Zwei-Wochen-Auswertung):** Mindestens 2 Einheiten mit Block-Puls höchstens 6 Schläge neben dem Bezugspuls und mindestens 80 % der Pulsreserve. Der daraus folgende Index (Schwellentempo ≈ 88 % der VO₂max-Pace, wie bei Laborwerten) liegt mehr als 0.6 über dem aktuellen → +½ der Differenz, höchstens +0.5 pro Auswertung (also höchstens etwa 1 pro Monat); mehr als 1.2 darunter (bei 3 Einheiten) → −0.5. Bei Warnzeichen keine Erhöhung. Zusammen mit der bisherigen Regel aus allen Qualitätseinheiten zählt der grössere Schritt. Gesamtkorrektur aus Training weiterhin −4 bis +6.
 
 ## Kacheln «Fortschritt»
 

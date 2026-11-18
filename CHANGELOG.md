@@ -1,5 +1,16 @@
 # Versionsverlauf
 
+## 3.4.0 – November 2026
+
+- **Schwelle deiner Pulsuhr eintragen** (Profil → «Schwelle der Pulsuhr»): Schwellenpuls (Pflicht), Schwellentempo (optional) und Datum, von Garmin, Polar, Coros, Suunto usw. Reihenfolge für die Schwelle: Laktattest → Pulsuhr → deine Einheiten. Der Puls der Uhr ist der Bezugspuls; das Tempo misst die App in deinen Einheiten bei diesem Puls selbst, weil Uhren das Schwellentempo oft zu vorsichtig schätzen. Ohne Einheit zeigt die Kachel den Wert der Uhr; mit Einheit einen Vergleich («Deine Uhr schätzt 4:10, du läufst bei diesem Puls 6 s/km schneller»). Älter als 4 Monate: Hinweis, einen neueren Wert einzutragen. Ein Laktattest, der älter als 4 Monate ist, tritt hinter einen neueren Uhrwert zurück.
+- **Wie bei Pulsuhren:** Für die gemessene Schwelle zählen Belastungen ab 20 Minuten; kürzere (ab 8 Minuten) nur, solange es keine längeren gibt, mit Hinweis «Annäherung».
+- Erklärung in der Kachel: «Schwelle ≈ das Tempo, das du etwa 60 Minuten halten kannst.»
+
+## 3.3.1 – November 2026
+
+- **Fehler behoben (Schwelle zu schnell):** Ohne Laktattest wurde jede Einheit auf einen geschätzten Schwellenpuls (89 % der Pulsreserve) hochgerechnet. Lag die Schätzung einige Schläge über deinem echten Block-Puls, ergab das ein viel zu schnelles Tempo (z. B. 3:42 statt 3:58). Jetzt gilt als Bezugspuls der Laktattest oder der mittlere Block-Puls deiner eigenen Schwelleneinheiten; ausgeglichen werden nur kleine Unterschiede (bis 6 Schläge, höchstens 3 %). Bei einer einzigen Einheit zeigt die Kachel genau deren Block-Pace und Puls.
+- Der Leistungsindex lernt nur aus Einheiten, die wirklich hart waren (Block-Puls mindestens 80 % der Pulsreserve) und nahe am Bezugspuls liegen.
+
 ## 3.3.0 – November 2026
 
 - **Neue Kacheln in «Fortschritt»** (zwei Spalten, je Zahl + Vergleich + Mini-Grafik): Zielkurs, Schwelle, Wochenumfang, Effizienz, Frische, Konstanz. Prognosen und Bestzeiten stehen in den Details von «Zielkurs», die Intensität 80/20 bei «Frische», Serie und Meilensteine bei «Konstanz».

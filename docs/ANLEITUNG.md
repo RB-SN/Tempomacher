@@ -193,7 +193,7 @@ Profile ohne Online-Speicher liegen nur im Browser des Geräts. Wenn du Browserd
 - **HRV und Zyklus:** optionale Felder im Morgen-Check.
 - **Fortschritt:** 6 Kacheln mit Zahl, Vergleich und Mini-Grafik; antippen öffnet die Details.
   - **Zielkurs:** Prognose gegenüber deiner Zielzeit, Veränderung in 4 Wochen. Ohne Zielzeit: Prognose und Leistungsindex. Details: alle Prognosen, Verlauf des Leistungsindex, Bestzeiten.
-  - **Schwelle:** dein gemessenes Schwellentempo, umgerechnet auf deinen Schwellenpuls (Laktattest hat Vorrang). Vor der ersten Tempoeinheit: längster Lauf.
+  - **Schwelle:** dein gemessenes Schwellentempo bei deinem Schwellenpuls. Bezug: Laktattest, sonst der Wert deiner Pulsuhr (Profil → «Schwelle der Pulsuhr»: Puls, optional Tempo und Datum aus Garmin Connect, Polar, Coros, Suunto …), sonst deine Einheiten. Vor der ersten Tempoeinheit: längster Lauf oder der Wert der Uhr.
   - **Wochenumfang:** Ø der letzten 4 Wochen, Mini-Mauer der letzten 8 Wochen (diese Woche geplant gestrichelt). Details: die Mauer, Woche antippen für ihre Läufe.
   - **Effizienz:** Trend der lockeren und langen Läufe.
   - **Frische:** frisch, ausgeglichen, im Training oder stark ermüdet (Fitness gegenüber Ermüdung). Details: Fitness-Verlauf und Intensität 80/20.

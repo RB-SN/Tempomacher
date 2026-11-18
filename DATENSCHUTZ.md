@@ -26,9 +26,9 @@ Nutzt du dasselbe Profil auf mehreren Geräten, werden die Daten zusätzlich im 
 ## Externe Dienste
 
 - **GitHub Pages** (GitHub Inc., USA) liefert die Webseite aus. Dabei werden technisch notwendige Zugriffsdaten wie die IP-Adresse verarbeitet; siehe [GitHub Privacy Statement](https://docs.github.com/de/site-policy/privacy-policies/github-general-privacy-statement).
-- **jsDelivr** liefert beim Screenshot-Import die Texterkennung Tesseract.js und die Sprachdaten (Deutsch, Englisch). Dabei wird deine IP-Adresse an jsDelivr übermittelt. Die Bilder selbst werden nur im Browser ausgewertet und nicht hochgeladen oder gespeichert.
+- **Texterkennung beim Screenshot-Import:** läuft vollständig im Browser; die nötigen Dateien liegen auf derselben Seite. Die Bilder werden weder hochgeladen noch gespeichert. (Nur die einzelne HTML-Datei ausserhalb von GitHub lädt die Texterkennung von jsDelivr.)
 - **Supabase** (Supabase Inc.) speichert bei Profilen für mehrere Geräte den verschlüsselten Datenblock; siehe [Supabase Privacy Policy](https://supabase.com/privacy).
-- **Google Fonts** (Google LLC) liefert die Schriften Unbounded und Manrope. Beim Laden wird deine IP-Adresse an Google übermittelt. Wer das vermeiden will, kann die Schriften lokal einbinden.
+- **Schriften:** in die Seite eingebettet, es werden keine Daten an Google oder andere Schriftanbieter übermittelt.
 
 Es gibt keine Analyse-Tools, keine Werbung und keine Cookies.
 

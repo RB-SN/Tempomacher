@@ -1,0 +1,28 @@
+/* ---- block report: every training block (up to and including its recovery week) gets a summary ---- */
+const PHW_=()=>({gen:T('Fitness aufbauen: viel lockerer Umfang und spielerische Reize.','Building fitness: plenty of easy volume and playful stimuli.'),base:T('Grundlage: Der Umfang steigt, Hügel und Steigerungen machen kräftig und ökonomisch, erste Tempoläufe.','Base: volume rises, hills and strides build strength and economy, first tempo runs.'),build:T('Aufbau: Schwelle und VO₂max werden länger, der lange Lauf wächst.','Build: threshold and VO₂max sessions get longer, the long run grows.'),peak:T('Spezifisch: Renntempo, lange Läufe mit Renntempo und Tests.','Specific: race pace, long runs with race pace and tests.'),taper:T('Tapering: weniger Umfang, kurze Tempo-Reize, frisch werden.','Taper: less volume, short sharp sessions, getting fresh.'),recover:T('Erholung nach dem Rennen.','Recovery after the race.')});
+function planBlocks(){const ws=(S.plan.weeks||[]).filter(w=>w.monday>=S.plan.startMonday),B=[];let cur=null;
+  ws.forEach((w,i)=>{if(!cur||cur.end||(cur.ph!==w.phase&&!cur.w.every(x=>x.phase==='gen')&&w.phase!=='gen'&&!(cur.ph==='base'&&w.phase==='build')&&w.phase==='taper')){cur={w:[],ph:w.phase};B.push(cur)}cur.w.push(w);if(w.recovery||(ws[i+1]&&ws[i+1].phase==='taper'&&w.phase!=='taper')||(ws[i+1]&&ws[i+1].phase==='recover'&&w.phase!=='recover'))cur.end=true});
+  return B.map((b,k)=>({no:k+1,from:b.w[0].monday,to:addD(b.w[b.w.length-1].monday,6),weeks:b.w,ph:b.w[b.w.length-1].phase}))}
+function blockStats(b){const runs=allRuns().filter(l=>l.done&&l.date>=b.from&&l.date<=b.to&&!(l.s&&l.s.type==='alt')),km=runs.reduce((a,l)=>a+logKm(l),0),pkm=b.weeks.reduce((a,w)=>a+(w.km||0),0);
+  const pl=[];b.weeks.forEach(w=>w.days.forEach((s,i)=>{if(s&&s.type!=='rest'&&s.type!=='alt')pl.push(addD(w.monday,i))}));
+  const ef=runs.filter(l=>!isIv(l)).map(effOf).filter(Boolean),dc=runs.filter(l=>l.dec!=null).map(l=>l.dec),sc=runs.map(l=>{const f=l.s?fbFull(l,l.date):null;return f&&f.score!=null?f.score:null}).filter(x=>x!=null);
+  const hv=S.adapt.history.filter(h=>h.vdot&&h.week&&h.week<=b.to),vd=hv.length?hv[hv.length-1].vdot:null;
+  return{km,pkm,runs:runs.length,done:pl.filter(d=>S.logs[d]&&S.logs[d].done).length,plan:pl.length,ef:ef.length?avg(ef):null,dc:dc.length?avg(dc):null,sc:sc.length?avg(sc):null,longest:Math.max(0,...runs.map(logKm)),vd}}
+function blockReport(b,prev){const s=blockStats(b),p=prev?blockStats(prev):null,m=mainRace(S),d=m?m.dist:10;
+  const li=[];
+  li.push(T(`<b>${fk(Math.round(s.km))} km</b> von ${fk(Math.round(s.pkm))} geplanten, ${s.done} von ${s.plan} Einheiten`,`<b>${fk(Math.round(s.km))} km</b> of ${fk(Math.round(s.pkm))} planned, ${s.done} of ${s.plan} sessions`)+(p&&p.km?` (${pctTxt((s.km/p.km-1)*100)} ${T('zum Block davor','vs previous block')})`:''));
+  if(s.ef&&p&&p.ef)li.push(T(`Effizienz <b>${pctTxt((s.ef/p.ef-1)*100)}</b>: ${s.ef>p.ef?'bei gleichem Puls schneller':'bei gleichem Puls etwas langsamer (Müdigkeit, Wetter?)'}`,`Efficiency <b>${pctTxt((s.ef/p.ef-1)*100)}</b>: ${s.ef>p.ef?'faster at the same heart rate':'a bit slower at the same heart rate (fatigue, weather?)'}`));
+  if(s.dc!=null)li.push(T(`Decoupling langer Läufe Ø <b>${fk(Math.round(s.dc*10)/10)} %</b>${p&&p.dc!=null?` (vorher ${fk(Math.round(p.dc*10)/10)} %)`:''}${s.dc<5?': Grundlage hält':''}`,`Long-run decoupling avg <b>${fk(Math.round(s.dc*10)/10)} %</b>${p&&p.dc!=null?` (before ${fk(Math.round(p.dc*10)/10)} %)`:''}${s.dc<5?': your base holds':''}`));
+  if(s.longest)li.push(T(`Längster Lauf ${fk(Math.round(s.longest*10)/10)} km`,`Longest run ${fk(Math.round(s.longest*10)/10)} km`)+(p&&p.longest&&s.longest>p.longest+.4?' ↑':''));
+  if(s.sc)li.push(T(`Ø Note ${fk(Math.round(s.sc*10)/10)}`,`Avg score ${fk(Math.round(s.sc*10)/10)}`));
+  if(s.vd&&p&&p.vd&&Math.abs(s.vd-p.vd)>=.1&&showPred(d))li.push(T(`Prognose ${fk(d)} km: ${fmtTime(predict(p.vd,d))} → <b>${fmtTime(predict(s.vd,d))}</b>`,`Prediction ${fk(d)} km: ${fmtTime(predict(p.vd,d))} → <b>${fmtTime(predict(s.vd,d))}</b>`));
+  return`<ul class="notes" style="margin:6px 0 0">${li.map(x=>`<li>${x}</li>`).join('')}</ul>`}
+function lastBlock(){const t=today(),B=planBlocks(),i=B.map(b=>b.to<t).lastIndexOf(true);return i>=0?{b:B[i],prev:B[i-1]||null,next:B[i+1]||null,all:B,i}:null}
+function blockCard(){const L=lastBlock();if(!L)return'';const{b,prev,next}=L;
+  const nk=next?keySessions(next.weeks.slice(0,2)).slice(0,3):[];
+  return`<div class="card"><div class="spread"><h3>${T('Block','Block')} ${b.no} · ${fshort(b.from)}–${fshort(b.to)}</h3><span class="hint">${phaseLabel(b.weeks[b.weeks.length-1])}</span></div>${blockReport(b,prev)}
+    ${next?`<p style="margin:10px 0 0;font-size:15px"><b>${T('Nächster Block','Next block')}:</b> ${PHW_()[next.ph]||''}${nk.length?' '+T('Schlüsseleinheiten: ','Key sessions: ')+nk.join(', ')+'.':''}</p>`:''}
+    ${L.i>0?`<details class="help" style="margin-top:8px"><summary>${T('Frühere Blöcke','Earlier blocks')}</summary>${L.all.slice(0,L.i).reverse().map((x,k,a)=>`<div style="margin-top:8px"><b>${T('Block','Block')} ${x.no}</b> <span class="hint">${fshort(x.from)}–${fshort(x.to)} · ${phaseLabel(x.weeks[x.weeks.length-1])}</span>${blockReport(x,L.all[x.no-2]||null)}</div>`).join('')}</details>`:''}</div>`}
+function blockNudge(){const L=lastBlock();if(!L||S.blockSeen===L.b.to||daysBetween(L.b.to,today())>9||!allRuns().some(l=>l.done&&l.date>=L.b.from&&l.date<=L.b.to))return'';
+  return`<button class="nudge" data-act="openBlock"><b>${T('Block','Block')} ${L.b.no} ${T('abgeschlossen','completed')}</b>${T('So hast du dich entwickelt','How you developed')}<span>›</span></button>`}
+

@@ -74,7 +74,7 @@ function labZones(p){const L=p.lab;if(!L)return null;
 function baseVdot(p){const L=labZones(p);
   if(L&&L.Z4&&L.Z4.pace)return vo2(60000/mid2(L.Z4.pace))/.88;
   return p.ref&&p.ref.dist&&p.ref.sec?vdotFrom(p.ref.dist,p.ref.sec):estimateVdot(p)}
-const vdotOf=st=>clamp(baseVdot(st.profile)+(st.profile.lab?0:(st.adapt.vdotAdj||0)),20,85);
+const vdotOf=st=>clamp(baseVdot(st.profile)+(st.profile.lab&&!labOld(st.profile)?0:(st.adapt.vdotAdj||0)),20,85);
 const hrMax=p=>p.hrMax||Math.round(208-0.7*p.age);
 const hrRest=p=>p.hrRest||[70,66,61,57][p.exp];
 const ZONES={Z1:{n:'Regeneration',hr:[.60,.70]},Z2:{n:'Grundlage',hr:[.68,.79]},Z3:{n:'Marathon',hr:[.79,.86]},Z4:{n:'Schwelle',hr:[.86,.91]},Z5:{n:'VO₂max',hr:[.91,.97]}};

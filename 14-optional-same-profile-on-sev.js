@@ -192,6 +192,7 @@ function pwCard(){
     <div class="row" style="justify-content:flex-end"><button type="button" class="btn ghost" data-act="pwCancel">${T('Abbrechen','Cancel')}</button><button type="submit" class="btn primary" data-act="pwSave" ${f.busy?'disabled':''}>${f.busy?T('Einen Moment …','One moment …'):T('Passwort ändern','Change password')}</button></div></form>`}
 function accCard(){
   const u=accounts().users[CU]||{};
+  if(u.cloud&&!CLOUD)return`<div class="card stack" style="gap:10px"><h3>${T('Konto & Geräte','Account & devices')}</h3><div class="adj"><b>${T('Keine Verbindung zum Online-Speicher eingerichtet.','No connection to the online storage is set up.')}</b> ${T('Die Datei config.js dieser Seite enthält keine Supabase-Adresse und keinen Schlüssel (z. B. beim Hochladen eines Updates überschrieben). Deine Daten auf diesem Gerät bleiben erhalten; sobald config.js wieder ausgefüllt ist, gleicht die App automatisch ab.','The config.js file of this site has no Supabase address and key (e.g. overwritten when uploading an update). Your data on this device is kept; as soon as config.js is filled in again, the app syncs automatically.')}</div></div>`;
   if(u.cloud)return`<div class="card stack" style="gap:10px"><h3>Konto & Geräte</h3><p class="muted" style="margin:0;font-size:14.5px">Benutzername <b>${esc(u.name)}</b>. Melde dich auf Handy oder Laptop mit diesem Benutzernamen und deinem Passwort an, dann hast du überall dasselbe Profil. Die Daten werden verschlüsselt gespeichert und automatisch abgeglichen.</p>
     <div class="row" style="gap:10px;align-items:center"><button class="btn small ghost" data-act="syncNow">Jetzt synchronisieren</button><button class="btn small ghost" data-act="mergeNow">${T('Mit Konto zusammenführen','Merge with account')}</button><span class="hint">${sync==='ok'?'Synchronisiert ✓':sync==='busy'?'Synchronisiere …':sync==='auth'?'Anmeldung abgelaufen, bitte neu anmelden.':'Offline. Wird nachgeholt, sobald eine Verbindung besteht.'}</span></div></div>`;
   if(!CLOUD)return'';
@@ -386,7 +387,7 @@ function renderTabs(){
   t.innerHTML=`<div class="in">${tabs.map(([k,l])=>`<button data-act="tab" data-v="${k}" ${ui.tab===k?'aria-current="page"':''}>${ICONS[k]}${l}</button>`).join('')}</div>`;
 }
 function render(){try{renderInner();addInfo($('#app'))}catch(e){showFatal((e&&e.stack)||e)}}
-const APP_VER='3.2.2';
+const APP_VER='3.4.1';
 const footer=()=>`<footer class="copy">© ${new Date().getFullYear()} Ramon Betschart. Alle Rechte vorbehalten.<br><span style="opacity:.7">Version ${APP_VER}</span></footer>`;
 function renderInner(){
   if(S)migrate();

@@ -1,5 +1,10 @@
 # Versionsverlauf
 
+## 3.4.1 – November 2026
+
+- **config.js ist nicht mehr im Update-Paket.** Beim Hochladen des ganzen Ordners hat die leere Vorlage deine ausgefüllte config.js überschrieben, dadurch war die Synchronisierung aus. Die Vorlage heisst jetzt `config.example.js`.
+- Online-Profil ohne Verbindung (config.js leer): «Konto & Geräte» sagt das jetzt klar, statt «Offline».
+
 ## 3.4.0 – November 2026
 
 - **Schwelle deiner Pulsuhr eintragen** (Profil → «Schwelle der Pulsuhr»): Schwellenpuls (Pflicht), Schwellentempo (optional) und Datum, von Garmin, Polar, Coros, Suunto usw. Reihenfolge für die Schwelle: Laktattest → Pulsuhr → deine Einheiten. Der Puls der Uhr ist der Bezugspuls; das Tempo misst die App in deinen Einheiten bei diesem Puls selbst, weil Uhren das Schwellentempo oft zu vorsichtig schätzen. Ohne Einheit zeigt die Kachel den Wert der Uhr; mit Einheit einen Vergleich («Deine Uhr schätzt 4:10, du läufst bei diesem Puls 6 s/km schneller»). Älter als 4 Monate: Hinweis, einen neueren Wert einzutragen. Ein Laktattest, der älter als 4 Monate ist, tritt hinter einen neueren Uhrwert zurück.

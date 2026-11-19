@@ -201,7 +201,7 @@ function renderSheet(){
   if(kind==='year')h=yearHTML();
   if(kind==='tools')h=toolsHTML();
   if(kind==='fileHow')h=fileHowHTML();
-  if(kind==='ins'){const I=INS()[ui.sheet.k]||['','',''];h=`<h2 style="margin:0 44px 12px 0;display:flex;gap:10px;align-items:center"><span class="fi" style="--fc:${I[2]}">${FICON[I[1]]||""}</span>${I[0]}</h2>${insBody(ui.sheet.k)}`}
+  if(kind==='ins'){const I=INS()[INS_ALIAS[ui.sheet.k]||ui.sheet.k]||['','',''];h=`<h2 style="margin:0 44px 12px 0;display:flex;gap:10px;align-items:center"><span class="fi" style="--fc:${I[2]}">${FICON[I[1]]||""}</span>${I[0]}</h2>${insBody(ui.sheet.k)}`}
   if(kind==='raceDay'){const r=S.races.find(x=>x.id===ui.sheet.id);h=r?`<div class="label">${fdate(r.date)} ${pd(r.date).getFullYear()} · ${fk(r.dist)} km${r.goal?' · '+T('Ziel ','goal ')+fmtTime(r.goal):''}</div><h2 class="d" style="font-size:26px;margin:4px 0 10px">${T('Renntag-Plan','Race-day plan')} · ${esc(r.name)}</h2>${raceDayHTML(r)}
     <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn ghost" data-act="rdPrint">${T('Drucken','Print')}</button><button class="btn primary" data-act="closeSheet">${T('Schliessen','Close')}</button></div>`:''}
   if(kind==='xview'){const x=(S.extra||[]).find(e=>e.id===ui.sheet.id);h=x?`<div class="label">${fdate(x.date)} · zusätzliches Training</div><h2 class="d" style="font-size:24px;margin:6px 0 12px">${esc(x.s.title)}</h2>${logCard(x.date,x,x.id)}<div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn ghost" data-act="closeSheet">Schliessen</button></div>`:''}

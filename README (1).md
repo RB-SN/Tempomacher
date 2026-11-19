@@ -66,7 +66,7 @@ Die Daten der Nutzerinnen und Nutzer bleiben bei Updates erhalten, solange die A
 | `manifest.webmanifest` | Name, Farben und Icons für die Installation aufs Handy |
 | `manifest-en.webmanifest` | Dasselbe für die englische Version («Pacemaker») |
 | `vendor/` | Texterkennung (Tesseract.js, Apache-2.0) und Sprachdaten Deutsch/Englisch; so lädt die Seite nichts von fremden Servern |
-| `config.js` | Zugangsdaten für den optionalen Online-Speicher (leer = nur lokal) |
+| `config.example.js` | Vorlage für `config.js` (Zugangsdaten für den optionalen Online-Speicher). Nur beim ersten Einrichten in `config.js` umbenennen und ausfüllen; Updates enthalten keine `config.js`, damit deine nie überschrieben wird. |
 | `docs/CLOUD.md`, `docs/sql/` | Anleitung und SQL für «dasselbe Profil auf Handy und Laptop» |
 | `sw.js` | Offline-Unterstützung; neue Versionen werden beim nächsten Besuch geladen |
 | `icons/` | App-Icons (SVG und PNG, inkl. Apple-Touch-Icon und maskierbares Icon) |

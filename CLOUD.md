@@ -155,6 +155,9 @@ Das Skript kann bei Bedarf nochmals ausgeführt werden; bestehende Konten und Da
 
 ### 3. Zugangsdaten in `config.js` eintragen
 
+Beim ersten Einrichten: `config.example.js` hochladen und auf GitHub in `config.js` umbenennen. Update-Pakete enthalten keine `config.js`, deine bleibt also erhalten.
+
+
 1. In Supabase oben auf **Connect** klicken (oder **Project Settings → API Keys**).
 2. Die **Project URL** kopieren, z. B. `https://abcdefgh.supabase.co`.
 3. Den **Publishable key** kopieren (beginnt mit `sb_publishable_`). Bei älteren Projekten heisst er «anon public».

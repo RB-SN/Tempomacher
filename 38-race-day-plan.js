@@ -227,7 +227,7 @@ function renderSheet(){
 // appearance: automatic (follows the phone), always light or always dark; stored per device, applied before the first paint by the loader
 function themeGet(){const v=lsGet('tempomacher.theme');return v==='dark'||v==='light'?v:'auto'}
 function themeSet(v){lsSet('tempomacher.theme',v==='auto'?null:v);const r=document.documentElement;if(v==='auto')r.removeAttribute('data-theme');else r.setAttribute('data-theme',v);
-  document.querySelectorAll('meta[name="theme-color"]').forEach(m=>{if(v==='auto'){m.content=m.getAttribute('data-c')||m.content}else{if(!m.getAttribute('data-c'))m.setAttribute('data-c',m.content);m.content=v==='dark'?'#0B1212':'#0E4F54'}})}
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m=>{if(v==='auto'){m.content=m.getAttribute('data-c')||m.content}else{if(!m.getAttribute('data-c'))m.setAttribute('data-c',m.content);m.content=v==='dark'?'#0F1113':'#F4F2EE'}})}
 function toast(m){let e=document.getElementById('toast');if(!e){e=document.createElement('div');e.id='toast';e.setAttribute('role','status');document.body.appendChild(e)}e.textContent=m;e.className='show';clearTimeout(toast.t);toast.t=setTimeout(()=>{e.className=''},2600)}
 const HOWI={shot:'<svg viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M9 7h6M9 11h6M9 15h3"/></svg>',
   file:'<svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 13h6M9 17h6"/></svg>',

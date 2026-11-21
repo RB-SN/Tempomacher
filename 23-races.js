@@ -36,8 +36,8 @@ function renderRaces(){
     <div class="row"><button class="btn ghost" data-act="raceCancel">Abbrechen</button><button class="btn primary" data-act="raceSave">Speichern</button></div></div></div>`}
   return`<div class="stack"><div class="sh"><h2>${T('Ziele','Goals')}</h2></div>${goalCard()}<div class="sh" style="margin-top:6px"><h2 style="font-size:20px">${T('Rennen','Races')}</h2>${f?'':'<button class="btn small primary" data-act="raceNew">+ Rennen</button>'}</div>
   ${form}
-  <div class="stack" style="gap:10px">${list.some(r=>r.date>=t)?'':`<p class="muted" style="margin:0">${T('Keine kommenden Rennen.','No upcoming races.')}</p>`}${list.filter(r=>r.date>=t).map(r=>{const past=r.date<t,main=race&&r.id===race.id,pred=showPred(r.dist)?predict(c.vd,r.dist):null;
-    return`<div class="card" style="${main?'border:2px solid var(--hot)':''}"><div class="racestrip ${main?'main':''}"></div><div class="spread" style="align-items:flex-start;flex-wrap:nowrap"><div style="min-width:0">
+  <div class="stack racegrid" style="gap:10px">${list.some(r=>r.date>=t)?'':`<p class="muted" style="margin:0">${T('Keine kommenden Rennen.','No upcoming races.')}</p>`}${list.filter(r=>r.date>=t).map(r=>{const past=r.date<t,main=race&&r.id===race.id,pred=showPred(r.dist)?predict(c.vd,r.dist):null;
+    return`<div class="card racecard${main?' main':''}"><div class="racestrip ${main?'main':''}"></div><div class="spread" style="align-items:flex-start;flex-wrap:nowrap"><div style="min-width:0">
       <h3 style="font-size:22px">${esc(r.name)}</h3><div class="muted" style="font-size:14px">${fdate(r.date)} ${pd(r.date).getFullYear()} · ${fk(r.dist)} km · ${T('in','in')} ${daysBetween(t,r.date)} ${T('Tagen','days')}</div></div>
       <button class="trash pen" data-act="raceEdit" data-v="${r.id}" aria-label="${T('Rennen bearbeiten','Edit race')}" title="${T('Bearbeiten','Edit')}">${PEN}</button></div>
       <div class="row" style="gap:6px;margin-top:8px"><span class="ph ${main?'ph-peak':'ph-rec'}">${main?'Hauptziel':REL[r.rel||'mid'][0]}</span><span class="ph ph-rec">${PLANO[r.plan||'none']}</span></div>

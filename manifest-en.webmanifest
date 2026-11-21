@@ -7,8 +7,8 @@
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#F2F5F4",
-  "theme_color": "#0E4F54",
+  "background_color": "#121416",
+  "theme_color": "#121416",
   "categories": [
     "sports",
     "health",

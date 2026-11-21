@@ -61,5 +61,5 @@ function renderHome(){
     ${runs.length?tilesHTML2():''}
     ${outlookHTML()||nextLine}
     ${S.profile.home?'':`<button class="link" style="align-self:flex-start" data-act="yearOpen">${T('Wohnort eintragen für den Städtevergleich ›','Add your home town for the city comparison ›')}</button>`}
-    ${foldsHTML}</div>${fabHTML()}`;
+    ${foldsHTML}</div>${(()=>{const s0=t>=S.plan.startMonday?effective(t).s:null;return s0&&s0.type!=='rest'&&!S.logs[t]?'':fabHTML()})()}`;
 }

@@ -387,11 +387,11 @@ function renderTabs(){
   t.innerHTML=`<div class="in">${tabs.map(([k,l])=>`<button data-act="tab" data-v="${k}" ${ui.tab===k?'aria-current="page"':''}>${ICONS[k]}${l}</button>`).join('')}</div>`;
 }
 function render(){try{renderInner();addInfo($('#app'))}catch(e){showFatal((e&&e.stack)||e)}}
-const APP_VER='3.4.1';
+const APP_VER='4.1.0';
 const footer=()=>`<footer class="copy">© ${new Date().getFullYear()} Ramon Betschart. Alle Rechte vorbehalten.<br><span style="opacity:.7">Version ${APP_VER}</span></footer>`;
 function renderInner(){
   if(S)migrate();
-  const app=$('#app');renderHdr();
+  const app=$('#app');renderHdr();document.body.dataset.tab=CU||(S&&S.demo)?(ui.tab||'home'):'auth';
   if(!CU&&!(S&&S.demo)){if(!ui.auth)ui.auth={mode:Object.keys(accounts().users).length?'login':'create',name:'',pw:'',pw2:'',keep:false,err:''};app.innerHTML=renderLogin()+footer();renderTabs();renderSheet();return}
   if(!S){if(!ui.ob)ui.ob=freshOb();app.innerHTML=renderOnboarding()+footer()}
   else{app.classList.toggle('enter',lastView!==ui.tab);lastView=ui.tab;app.innerHTML=({home:renderHome,train:renderTrain,form:renderForm,races:renderRaces,me:renderMe}[ui.tab]||renderHome)()+footer()}

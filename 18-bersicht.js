@@ -24,6 +24,12 @@ function sessAmt(s,l){return s.type==='alt'?`${s.dur||45}<small>min</small>`:`${
 function nextSess(){const t=today();for(let i=1;i<=14;i++){const d=addD(t,i),x=planSession(d);if(x&&x.type!=='rest')return[d,x]}return null}
 function tmwLine(){const n=nextSess();if(!n)return'';const[d,x]=n,t=today(),lab=d===addD(t,1)?T('Morgen','Tomorrow'):DOWS[dow(d)]+' '+pd(d).getDate()+'.';
   return`<span class="tmw" style="--mz:${zcol(x)}"><i></i><span>${lab}: <b>${esc(x.title)}</b> · ${x.type==='alt'?(x.dur||45)+' min':fk(x.km)+' km'}</span></span>`}
+// today's session as a bar: easy parts grey, the hard part coral (warm-up · work · rest · cool-down, or a fast finish at the end)
+function segBar(s){if(!s||s.type==='alt'||!s.km)return'';const st=(s.structure||[]).map(x=>String(x).replace(/<[^>]+>/g,''));let warm=0,cool=0,work=0,fin=false;const n=x=>+String(x).replace(',','.');
+  st.forEach(x=>{let m;if((m=x.match(/^(\d+(?:[.,]\d+)?)\s*km\s+(einlaufen|warm)/i)))warm=n(m[1]);if((m=x.match(/^(\d+(?:[.,]\d+)?)\s*km\s+(auslaufen|cool)/i)))cool=n(m[1]);if(!work&&(m=x.match(/(?:letzten?|last)\s+(\d+(?:[.,]\d+)?)\s*km/i))){work=n(m[1]);fin=true}});
+  if(s.quality&&!work&&typeof planShape==='function'){const sh=planShape(s);if(sh){const T0=ctxFor(S).pc.T||300;work=sh.reps.reduce((a,r)=>a+(r.d?r.d/1000:r.t/T0),0)}}
+  const tot=s.km;if(!(work>0)||work>=tot)return'';const rest=Math.max(0,tot-warm-cool-work),seg=(f,c)=>f>0?`<i style="flex:${f.toFixed(2)};background:${c}"></i>`:'';
+  return`<span class="segbar" aria-hidden="true">${fin?seg(tot-work,'var(--band-2)')+seg(work,'var(--hot)'):seg(warm,'var(--band-2)')+seg(work,'var(--hot)')+seg(rest,'var(--band-2)')+seg(cool,'var(--band-2)')}</span>`}
 function todayTile(){wxLoad();
   const t=today(),{s}=t>=S.plan.startMonday?effective(t):{s:null},log=S.logs[t];
   const doneToday=[...(log&&log.done?[{l:log,key:'d:'+t}]:[]),...(S.extra||[]).filter(x=>x.date===t&&x.done).sort((a,b)=>(a.at||0)-(b.at||0)).map(x=>({l:x,key:'x:'+x.id}))];
@@ -35,10 +41,12 @@ function todayTile(){wxLoad();
         ${fb&&fb.score!=null?`<span class="fbs mini" style="--sc:${scoreCol(fb.score)}"><b>${fb.score}</b></span>`:''}</button>`}).join('')}
     ${s&&s.type!=='rest'&&!log&&t>=S.plan.startMonday?`<span class="hint">${T('Geplant war','Planned was')}: ${esc(s.title)} · <button class="link" data-act="tab" data-v="train">${T('offen','open')}</button></span>`:''}${tmwLine()}</div>`;
   const rest=!s||s.type==='rest',skipped=log&&!log.done;
-  return`<button class="tday ${rest||skipped?'rest':''}" style="--zc:${zcol(s)}" ${!rest&&!log?`data-act="openDay" data-d="${t}"`:'data-act="tab" data-v="train"'}>
+  const hero=!rest&&!log;
+  return`<button class="tday ${rest||skipped?'rest':''}${hero?' hero2':''}" style="--zc:${zcol(s)}" ${!rest&&!log?`data-act="openDay" data-d="${t}"`:'data-act="tab" data-v="train"'}>
     <span class="tl"><span>${T('Heute','Today')} · ${fdate(t)}</span>${!rest&&!log&&s.type!=='alt'?`<span>${ZONES[s.zone]?ZONES[s.zone].n:''}</span>`:''}</span>
     <span class="tm"><span class="tt">${skipped?T('Nicht durchgeführt','Skipped'):s&&s.pause?esc(s.title):rest?T('Ruhetag','Rest day'):esc(s.title)}</span>${!rest?`<span class="tk">${sessAmt(s,log)}</span>`:`<span class="restshoe">${ICONS.train}</span>`}</span>
-    <span class="tp">${!rest&&!log&&s.type!=='alt'?zonePill(s.zone)+capPill(s):''}${rest?`<span class="hint">${s&&s.pause?T('Gute Besserung bzw. schöne Zeit. Der Plan wartet.','Get well soon or enjoy. The plan will wait.'):T('Erholung gehört zum Training.','Recovery is part of training.')}</span>`:''}${!rest&&!log?`<span class="go">${T('Details & erfassen ›','Details & log ›')}</span>`:''}</span>
+    <span class="tp">${!rest&&!log&&s.type!=='alt'?zonePill(s.zone)+capPill(s):''}${rest?`<span class="hint">${s&&s.pause?T('Gute Besserung bzw. schöne Zeit. Der Plan wartet.','Get well soon or enjoy. The plan will wait.'):T('Erholung gehört zum Training.','Recovery is part of training.')}</span>`:''}</span>${hero?segBar(s):''}
+    ${hero?`<span class="cta">${T('Los geht’s','Let’s go')}<small>${T('Details & erfassen','Details & log')}</small></span>`:''}
     ${!rest&&!log?wxLine(s):''}${tmwLine()}</button>`;
 }
 function ringSVG(p){const r=15,c=+(2*Math.PI*r).toFixed(1),o=+(c*(1-clamp(p,0,1))).toFixed(1);

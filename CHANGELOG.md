@@ -1,5 +1,25 @@
 # Versionsverlauf
 
+## 4.1.0 – November 2026 · Neues Design «Sportgerät» (Teil 2, komplett)
+
+- **Training:** Umschalter Erfassen / Trainingsplan / Einträge in schmalen Grossbuchstaben. Nebenaktionen (Alternativtraining, Verschieben, Nicht durchgeführt, Weiteres Training, Pause) als ruhige Knöpfe statt unterstrichener Links. Kein schwebender Knopf mehr, das Erfassen sitzt direkt unter dem Training.
+- **Trainingsplan:** Phasen als neutrale Etiketten mit farbigem Punkt (Koralle bleibt für Aktionen), aktuelle Woche mit kräftigem Rahmen, Aufbau blau und Spezifisch rot im Phasenbalken.
+- **Ziele:** Rennkarten mit Zielflaggen-Streifen in Schwarz, das Hauptziel mit kräftigem Rahmen statt Koralle. Auf dem Laptop zwei Rennkarten nebeneinander.
+- Bewertungen in den Einträgen in der Sportschrift.
+
+## 4.0.1 – November 2026
+
+- **Fortschritt-Kacheln aufgeräumt, Farbe bleibt als Signatur:** neutrale Karte (hell weiss, dunkel anthrazit), ohne farbigen Hintergrund und Oberrand. Jede Kachel behält ihre Farbe im Titel mit Farbquadrat, in der Mini-Grafik und im Fortschrittsbalken. Neue, abgestimmte Palette (Blau, Orange, Türkis, Grün, Gold, Violett) mit helleren Tönen im Dunkelmodus.
+
+## 4.0.0 – November 2026 · Neues Design «Sportgerät» (Teil 1)
+
+- **Neue Schrift:** Barlow Condensed für Titel und Zahlen (schmal, sportlich, keine Worttrennungen mehr), Barlow für Text. Eingebettet, funktioniert offline.
+- **Neue Farben:** Hell = warmes Off-White mit Schwarz, Dunkel = Nacht (fast schwarz). **Koralle nur noch für Aktionen** und «wo du bist». Neues App-Symbol (schwarz mit grauem und korallenfarbenem Pfeil).
+- **Übersicht:** Das heutige Training ist der Held: dunkle Karte, grosse Zahl, Balken des Ablaufs (locker grau, harter Teil Koralle), Knopf «Los geht’s» direkt in der Karte. Der schwebende Knopf erscheint nur noch, wenn heute kein Training ansteht. Rennen als ruhige helle Karte, mehr Luft.
+- **Laptop:** Ab 1024 px Breite Navigation links, Übersicht in zwei Spalten (Heute links gross, Rennen, Woche und Werte rechts). Andere Bereiche breiter.
+- Navigation in schmalen Grossbuchstaben, aktiver Bereich in Koralle.
+- Noch nicht umgestellt (folgt): Training, Fortschritt (Kacheln noch farbig), Ziele, Profil.
+
 ## 3.4.1 – November 2026
 
 - **config.js ist nicht mehr im Update-Paket.** Beim Hochladen des ganzen Ordners hat die leere Vorlage deine ausgefüllte config.js überschrieben, dadurch war die Synchronisierung aus. Die Vorlage heisst jetzt `config.example.js`.

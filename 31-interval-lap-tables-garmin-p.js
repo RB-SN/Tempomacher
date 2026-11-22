@@ -5,7 +5,7 @@
 const LAP_TY=[['warm',/warm\s*-?\s*up|aufw[äa]rm\w*|einlaufen|échauffement/i],['cool',/cool\s*-?\s*down|abk[üu]hl\w*|auslaufen|abw[äa]rm\w*|retour\s+au\s+calme/i],
   ['rec',/erholung|recovery|\brest\b|\bruhe\b|\bpause\b|trabpause|\bjog\b|récup\w*|\boff\b/i],['work',/\blaufen\b|\brun(?:ning)?\b|\bwork\b|arbeit|belastung|intervall?\b|\binterval\b|\baktiv\b|\bactive\b|\bon\b|effort/i]];
 const LAP_TOT=/\b(gesamt|total|summe|insgesamt|summary)\b/i;
-const LAP_COL=[['hrMax',/max\.?\s*(?:herz\w*|hf|hr|heart\s*rate|puls)/i,'i'],['cum',/gesamtzeit|kumul\w*|cumulative|elapsed|verstrichen\w*/i,'t'],['gap',/\bsap\b|\bgap\b|\bngp\b|steigung\s*angepasst|grade\s*adj\w*/i,'t'],
+const LAP_COL=[['hrMax',/max\.?\s*(?:herz\w*|hf|hr|heart\s*rate|puls)/i,'i'],['cum',/\S?esamtzeit|kumul\w*|cumulative|elapsed|verstrichen\w*/i,'t'],['gap',/\bsap\b|\bgap\b|\bngp\b|steigung\s*angepasst|grade\s*adj\w*/i,'t'],
   ['time',/\bzeit\b|\btime\b|\bdauer\b|duration/i,'t'],['dist',/distanz|distance|strecke/i,'d'],['pace',/pace|\btempo\b/i,'t'],['hr',/herzfrequenz|\bhf\b|heart\s*rate|\bpuls\b|\bhr\b/i,'i'],
   ['gain',/anstieg|ascent|aufstieg|\bans\b/i,'i'],['desc',/abstieg|descent/i,'i'],['cad',/kadenz|cadence/i,'i'],['pow',/leistung|power|watt/i,'i']];
 function lapHeader(ln){let s=ln;const cols=[];
@@ -21,6 +21,8 @@ function lapToks(s){const out=[],re=/(\d{1,2}:\d{2}:\d{2}(?:[.,]\d)?)|(\d{1,3}:\
   return out}
 function shotLaps(lines){const laps=[];let H=null,miss=0;
   lines.forEach(ln=>{const h=lapHeader(ln);if(h){H=h;miss=0;return}if(!H)return;
+    // OCR slips in Garmin tables: «1:23:021» (dot lost), «58069 100» (58:06.9 1.00)
+    ln=ln.replace(/(\d{1,2}:\d{2}:\d{2})(\d)\b/g,'$1.$2').replace(/\b(\d{1,2})([0-5]\d)(\d)\s+100\b/g,'$1:$2.$3 1.00');
     const tk=lapToks(ln);if(tk.filter(t=>t.k==='t').length<1||tk.length<2){if(++miss>2)H=null;return}miss=0;
     let ty=null;for(const[k,re]of LAP_TY)if(re.test(ln)){ty=k;break}
     const total=LAP_TOT.test(ln),o={type:ty,total};let q=0;
@@ -42,6 +44,28 @@ function shotLaps(lines){const laps=[];let H=null,miss=0;
   // Garmin interval row above its laps («1 16:00.0 29:13.7 4.03 …» then «4 3:58.0 17:11.7 1.00 …»): same start, longer → the interval itself
   laps.forEach((r,i)=>{const n=laps[i+1];if(n&&!r.total&&!n.total&&r.cum!=null&&n.cum!=null&&Math.abs((r.cum-r.time)-(n.cum-n.time))<1.5&&r.time>n.time+2)r.grp=true});
   return laps}
+// aerobic decoupling (Friel): speed per heart beat, first against second half, after a 10-minute warm-up.
+// Rows {t s, d km, hr, g = grade-adjusted pace s/km (Garmin SAP/GAP) or null}. Hills: with g it is grade-adjusted; without g and more than
+// 12 m climb per km it is not rated. A clearly faster second half (progression, fast finish) is not rated either: the ratio would flatter it.
+function decFrom(R,gainKm){R=R.filter(r=>r.hr&&r.t>0&&r.d>0);let acc=0;const U=R.filter(r=>{acc+=r.t;return acc>600});if(U.length<6)return null;
+  const useG=U.every(r=>r.g>120&&r.g<900);if(!useG&&gainKm!=null&&gainKm>12)return{dec:null,why:'hilly'};
+  const tot=U.reduce((x,r)=>x+r.t,0);let run=0;const H1=[],H2=[];U.forEach(r=>{(run+r.t/2<tot/2?H1:H2).push(r);run+=r.t});if(H1.length<3||H2.length<3)return null;
+  const sp=a=>a.reduce((x,r)=>x+r.d,0)*1000/a.reduce((x,r)=>x+(useG?r.g*r.d:r.t),0),hr=a=>a.reduce((x,r)=>x+r.hr*r.t,0)/a.reduce((x,r)=>x+r.t,0);
+  const s1=sp(H1),s2=sp(H2),ch=s2/s1-1;
+  if(ch>.04){// progression: rate the longest steady part instead (≥ 30 min, every piece within ±3 % of its median pace; ±6 % for 1-minute pieces)
+    const pc=r=>useG&&r.g?r.g:r.t/r.d,tol=R.reduce((x,r)=>x+r.t,0)/R.length<90?.06:.03;let best=null;
+    for(let i=0;i<R.length;i++)for(let j=i+5;j<R.length;j++){const S2=R.slice(i,j+1),ps=S2.map(pc).sort((a,b)=>a-b),md=ps[Math.floor(ps.length/2)];if(S2.some(r=>Math.abs(pc(r)/md-1)>tol))break;
+      const tt=S2.reduce((x,r)=>x+r.t,0);if(tt>=1800&&(!best||tt>best.tt))best={i,j,tt}}
+    if(best){const S2=R.slice(best.i+1,best.j+1),T2=S2.reduce((x,r)=>x+r.t,0);let q=0;const A1=[],A2=[];S2.forEach(r=>{(q+r.t/2<T2/2?A1:A2).push(r);q+=r.t});
+      if(A1.length>=2&&A2.length>=2){const e1=sp(A1)/hr(A1),e2=sp(A2)/hr(A2);const k0=R.indexOf(R[best.i]);return{dec:Math.round((e1-e2)/e1*1000)/10,why:'seg',seg:[best.i,best.j],ch:Math.round(ch*100)}}}
+    return{dec:null,why:'prog',ch:Math.round(ch*100)}}
+  const e1=s1/hr(H1),e2=s2/hr(H2);return{dec:Math.round((e1-e2)/e1*1000)/10,why:useG?'gap':'raw'}}
+// elevation per split (Strava «Anstieg»): grade-adjusted pace per row when the signs can be trusted. OCR often drops the minus sign,
+// so the climb of the splits must agree with the total ascent of an overview screenshot; otherwise only the hilliness (|m| per km) is used.
+function elGap(R,ovGain){const E=R.filter(r=>r.el!=null);R.gainKm=null;if(E.length<R.length-1||R.some(r=>r.g))return R;
+  const km=R.reduce((x,r)=>x+r.d,0),pos=E.reduce((x,r)=>x+Math.max(0,r.el),0),abs=E.reduce((x,r)=>x+Math.abs(r.el),0);
+  if(ovGain!=null&&Math.abs(pos-ovGain)<=Math.max(5,ovGain*.08)){R.forEach(r=>{if(r.el!=null&&r.d>0)r.g=r.t/r.d/gapF(r.el/(r.d*10))});return R}
+  R.gainKm=km?abs/2/km:null;return R}
 // all lap rows of all screenshots → one sequence with types; returns intervals, recoveries and (if complete) the whole activity
 function ivSummary(v){const r=v.rec;
   return T(`${v.n===1?'Tempoabschnitt':'Intervalle'} erkannt: <b>${v.n===1?v.rep:v.n+' × '+v.rep}</b> · Belastung Ø ${pace(v.pace)}${v.gap&&Math.abs(v.gap-v.pace)>=2?` (an Steigung angepasst ${pace(v.gap)})`:''}${v.hr?' · Ø HF '+v.hr:''}${v.hrMax?' (max '+v.hrMax+')':''}${v.gain!=null?' · ↗ '+v.gain+' hm in den Belastungen':''}${r?`<br>Erholung ${r.n} × ${fmtTime(r.t)}${r.hr?' · Ø HF '+r.hr:''}`:''}${v.warm||v.cool?`<br>${[v.warm&&'Einlaufen',v.cool&&'Auslaufen'].filter(Boolean).join(' und ')} erkannt`:''}`,
@@ -62,7 +86,7 @@ function lapAnalysis(lists){
   if(wi.length<2){// no labels: the repeated, clearly harder rows are the work rows
     // 1-km rows may be auto-laps: as reps only if something else lies between them (1000-m intervals with recoveries)
     const km1=i=>L[i].dist&&Math.abs(L[i].dist-1)<.005,bins={};L.forEach((r,i)=>{const k=Math.round(r.time/5);(bins[k]=bins[k]||[]).push(i)});
-    const cand=Object.values(bins).filter(g=>g.length>=3&&!(g.every(km1)&&g.some((x,j)=>j&&x===g[j-1]+1))).map(g=>({g,sc:avg(g.map(i=>L[i].hr||0))*2-avg(g.map(i=>L[i].pace||600))/10})).sort((a,b)=>b.sc-a.sc)[0];
+    const allKm=L.filter((r,i)=>km1(i)).length>=L.length-1,cand=allKm?null:Object.values(bins).filter(g=>g.length>=3&&!(g.every(km1)&&g.some((x,j)=>j&&x===g[j-1]+1))).map(g=>({g,sc:avg(g.map(i=>L[i].hr||0))*2-avg(g.map(i=>L[i].pace||600))/10})).sort((a,b)=>b.sc-a.sc)[0];
     if(cand){const others=L.filter((r,i)=>!cand.g.includes(i)),fast=avg(cand.g.map(i=>L[i].pace||0))<avg(others.map(r=>r.pace||0))*.97||avg(cand.g.map(i=>L[i].hr||0))>avg(others.map(r=>r.hr||0))+8;
       if(fast)cand.g.forEach(i=>L[i].type='work')}
     wi=L.map((r,i)=>r.type==='work'?i:-1).filter(i=>i>=0)}
@@ -110,18 +134,20 @@ function parseShot(text,ref){
   if(allTot){if(F.dist==null&&lapTot.dist)F.dist=lapTot.dist;if(F.time==null&&F.mov==null)F.time=lapTot.time;if(F.hr==null&&lapTot.hr)F.hr=lapTot.hr}
   const LA=LAPS.length>=2?lapAnalysis([LAPS]):null;
   // splits / laps: rows starting with a lap number and containing a pace (not when the lap table already gave the intervals)
-  const rows=[];let want=1;if(LA)want=1e9;
+  const rows=[];let want=1;if(LA)want=1e9;const kmRows=lines.some(l=>/^\s*km\s+(tempo|pace|zeit|time)\b/i.test(l)),elCol=lines.some(l=>/\b(anstieg|h[öo]he\w*|elev\w*|aufstieg|gain)\b/i.test(l)&&/\b(hf|puls|bpm|herz\w*|hr|heart)\b/i.test(l));
   lines.forEach(ln=>{const m=ln.match(/^(\d{1,2})\b\s*(.*)$/);if(!m)return;const n=+m[1];if(n!==want&&!(n===want+1&&rows.length))return;
-    const tk=shotTokens(m[2]);const tms=tk.filter(t=>t.k==='t'||t.k==='ms'||t.k==='p');if(!tms.length)return;
+    const tx=kmRows&&/^\d[0-5]\d\b/.test(m[2])?m[2].replace(/^(\d)([0-5]\d)\b/,'$1:$2'):m[2]; // «459» = 4:59 when the colon was lost
+    const tk=shotTokens(tx);const tms=tk.filter(t=>t.k==='t'||t.k==='ms'||t.k==='p');if(!tms.length)return;
     const kmT=tk.find(t=>(t.k==='km'||(t.k==='n'&&/[.,]\d/.test(t.raw)))&&t.v>0&&t.v<=50);const hrT=tk.filter(t=>t.k==='bpm'||(t.k==='n'&&!/[.,]/.test(t.raw)&&t.v>=60&&t.v<=220)).pop();
     let p=tk.find(t=>t.k==='p'),tt=null;
     if(p&&tms.length>1)tt=tms.find(t=>t!==p&&t.i<p.i)||null;
     if(!p){if(tms.length>=2){tt=tms[0];p=tms[1]}else if(kmT&&tms[0].v>kmT.v*240*1.5){tt=tms[0]}else p=tms[0]}
-    let pace=p?p.v:null,dist=kmT?kmT.v:null,time=tt?tt.v:null;
+    let pace=p?p.v:null,dist=kmT?kmT.v:kmRows?1:null,time=tt?tt.v:null;
     if(!pace&&time&&dist)pace=time/dist;if(!time&&pace&&dist)time=pace*dist;
     if(pace&&time&&dist&&Math.abs(time/dist-pace)>pace*.12)time=Math.round(pace*dist); // OCR slip in one column: trust pace × distance
     if(!(pace>=120&&pace<=900))return;
-    rows.push({n,pace,dist,time,hr:hrT?hrT.v:null});want=n+1});
+    const em=elCol&&hrT?tx.match(/(?:^|\s)([-−–]?\d{1,3})\s+\d{2,3}\s*(?:bpm)?\s*$/i):null;
+    rows.push({n,pace,dist,time,hr:hrT?hrT.v:null,el:em?+em[1].replace(/[−–]/,'-'):null});want=n+1});
   let iv=null;if(LA){iv=LA.iv;if(LA.tot){if(F.dist==null)F.dist=LA.tot.km;if(F.time==null&&F.mov==null)F.time=LA.tot.mov;if(F.hr==null&&LA.tot.hr)F.hr=LA.tot.hr}}
   if(!iv&&rows.length>=6){const vs=rows.map(r=>1000/r.pace).sort((a,b)=>a-b),med=vs[Math.floor(vs.length/2)];
     const w=rows.filter(r=>1000/r.pace>med*1.12),slow=rows.filter(r=>!w.includes(r));
@@ -133,12 +159,8 @@ function parseShot(text,ref){
       iv={n:w.length,wt:haveT?Math.round(wt):null,pace,hr,rep:md?(md>=950?`~${fk(Math.round(md/100)/10)} km`.replace('~1 km','~1000 m'):`~${Math.round(md/50)*50} m`):haveT?`~${Math.round(wt/w.length)} s`:'?',how:'Splits'}}}
   // aerobic decoupling from splits of a continuous run: after a 10-minute warm-up, first versus second half (speed per heart beat)
   let dec=null;
-  if(!iv&&rows.length>=8&&rows.filter(r=>r.hr).length>=rows.length-1){
-    const R=rows.map(r=>({t:r.time||r.pace*(r.dist||1),d:r.dist||(r.time?r.time/r.pace:1),hr:r.hr})).filter(r=>r.hr&&r.t>0);
-    let acc=0;const use=R.filter(r=>{acc+=r.t;return acc>600});
-    if(use.length>=6){const tot=use.reduce((x,r)=>x+r.t,0);let run=0;const h1=[],h2=[];use.forEach(r=>{(run<tot/2?h1:h2).push(r);run+=r.t});
-      const ef=a=>{const tt=a.reduce((x,r)=>x+r.t,0),dd=a.reduce((x,r)=>x+r.d,0),hh=a.reduce((x,r)=>x+r.hr*r.t,0)/tt;return dd/tt/hh};
-      if(h1.length&&h2.length)dec=Math.round((ef(h1)-ef(h2))/ef(h1)*1000)/10}}
+  let decNote=null;
+  if(!iv&&rows.length>=8&&rows.filter(r=>r.hr).length>=rows.length-1){const D0=decFrom(rows.map(r=>({t:r.time||r.pace*(r.dist||1),d:r.dist||(r.time?r.time/r.pace:1),hr:r.hr,g:null})),F.gain!=null&&F.dist?F.gain/F.dist:null);if(D0){dec=D0.dec;decNote=D0.why}}
   // fallbacks without labels
   const all=lines.flatMap(shotTokens);
   if(F.gain==null){const hm=all.find(t=>t.u==='hm'&&t.v>=0&&t.v<=6000);if(hm)F.gain=hm.v;
@@ -158,7 +180,7 @@ function parseShot(text,ref){
   if(!mov&&pace&&km)mov=Math.round(pace*km);
   if(mov&&km&&(!pace||Math.abs(pace-mov/km)>mov/km*.15))pace=mov/km;
   const lapKm=rows.length>=2&&rows.every(r=>r.dist)?Math.round(rows.reduce((x,r)=>x+r.dist,0)*100)/100:null;
-  return{sport,speed:F.speed||null,date:shotDate(text,ref),km,mov,avgPace:pace,avgHr:F.hr||null,hrMax:F.hrMax&&(!F.hr||F.hrMax>=F.hr)?F.hrMax:LA&&LA.tot&&LA.tot.hrMax||null,gain:F.gain!=null?Math.round(F.gain):null,iv,dec,splits:rows.length>=3?rows.map(r=>({pace:r.pace,dist:r.dist||null,time:r.time||null,hr:r.hr||null})):null,lapKm,laps:LAPS.length>=2&&(LA||LAPS.some(r=>r.cum!=null||r.type))?LAPS:null,src:'screenshot',kw:shotKw(lines.slice(0,40).join('\n')),rows:Math.max(rows.length,LAPS.filter(r=>!r.total).length),lab:['dist','mov','time','pace','hr','gain'].filter(k=>F[k]!=null).length};
+  return{sport,speed:F.speed||null,date:shotDate(text,ref),km,mov,avgPace:pace,avgHr:F.hr||null,hrMax:F.hrMax&&(!F.hr||F.hrMax>=F.hr)?F.hrMax:LA&&LA.tot&&LA.tot.hrMax||null,gain:F.gain!=null?Math.round(F.gain):null,iv,dec,decNote,splits:rows.length>=3?rows.map(r=>({n:r.n,pace:r.pace,dist:r.dist||null,time:r.time||null,hr:r.hr||null,el:r.el})):null,lapKm,laps:LAPS.length>=2&&(LA||LAPS.some(r=>r.cum!=null||r.type))?LAPS:null,src:'screenshot',kw:shotKw(lines.slice(0,40).join('\n')),rows:Math.max(rows.length,LAPS.filter(r=>!r.total).length),lab:['dist','mov','time','pace','hr','gain'].filter(k=>F[k]!=null).length};
 }
 
 const isImg=f=>/^image\//.test(f.type||'')||/\.(png|jpe?g|heic|heif|webp)$/i.test(f.name||'');
@@ -188,6 +210,9 @@ async function prepImg(file){
     let w=img.naturalWidth,h=img.naturalHeight;const sc=w<1100?Math.min(3,1400/w):w>2200?2200/w:1;w=Math.round(w*sc);h=Math.round(h*sc);
     const cv=document.createElement('canvas');cv.width=w;cv.height=h;const x=cv.getContext('2d');x.drawImage(img,0,0,w,h);
     const d=x.getImageData(0,0,w,h),p=d.data;let sum=0;
+    {let ls=0,ln=0;for(let i=0;i<p.length;i+=16){const a=Math.max(p[i],p[i+1],p[i+2]),b=Math.min(p[i],p[i+1],p[i+2]);if(a-b<40){ls+=a;ln++}}const bg=ln&&ls/ln<128?0:255,minRun=Math.round(30*Math.max(1,w/1170));
+      for(let y=0;y<h;y++){let run=0;for(let xx=0;xx<=w;xx++){const i=(y*w+xx)*4,sat=xx<w&&Math.max(p[i],p[i+1],p[i+2])-Math.min(p[i],p[i+1],p[i+2])>60;
+        if(sat)run++;else{if(run>=minRun)for(let k=xx-run;k<xx;k++){const j=(y*w+k)*4;p[j]=p[j+1]=p[j+2]=bg}run=0}}}}
     for(let i=0;i<p.length;i+=4){const g=.299*p[i]+.587*p[i+1]+.114*p[i+2];p[i]=p[i+1]=p[i+2]=g;sum+=g}
     if(sum/(p.length/4)<128)for(let i=0;i<p.length;i+=4)p[i]=p[i+1]=p[i+2]=255-p[i]; // dark mode screenshots: invert
     x.putImageData(d,0,0);return cv}
@@ -266,9 +291,9 @@ async function readShots(files){
   finally{w.terminate()}
   const rs=texts.map(t=>parseShot(t,today()));
   if(rs.length>=2&&!ui.altPick){const sums=rs.filter(r=>r.date&&r.km&&(r.mov||r.avgPace)&&r.rows<3),dates=[...new Set(sums.map(r=>r.date))].sort();
-    if(dates.length>=2){const out=dates.map(d=>{const g=rs.filter(r=>r.date===d),m=g.length===1?Object.assign({},g[0]):mergeShots(g);m.dateFound=true;m.shots=g.length;m.miss=[!m.avgHr&&'Puls',m.gain==null&&'Anstieg'].filter(Boolean);return m});
+    if(dates.length>=2){const out=dates.map(d=>{const g=rs.filter(r=>r.date===d),m=mergeShots(g);m.dateFound=true;m.shots=g.length;m.miss=[!m.avgHr&&'Puls',m.gain==null&&'Anstieg'].filter(Boolean);return m});
       return{batch:out,lost:rs.filter(r=>!r.date).length}}}
-  const a=texts.length===1?rs[0]:mergeShots(rs);
+  const a=mergeShots(rs);
   if((a.sport&&a.sport!=='run')||ui.altPick){if(!a.mov&&a.km&&a.speed)a.mov=Math.round(a.km/a.speed*3600);if(!a.mov&&!a.km)throw new Error(T('Im Screenshot wurden weder Dauer noch Distanz erkannt. Am besten die Übersicht der Aktivität verwenden oder die Werte von Hand eintragen.','Neither duration nor distance was found in the screenshot. Use the activity summary or enter the values manually.'))}
   else if((!a.km||!(a.mov||a.avgPace))&&a.iv)throw new Error(T(`Die Intervalle wurden erkannt (${a.iv.n} × ${a.iv.rep}), aber nicht der ganze Lauf. Bitte zusätzlich die Übersicht der Aktivität (Distanz, Zeit, Ø Puls) hochladen, oder alle Abschnitte: «Alle» bzw. Warm up, Laufen, Erholung und Cool Down.`,`The intervals were recognised (${a.iv.n} × ${a.iv.rep}), but not the whole run. Please also upload the activity summary (distance, time, avg. heart rate), or all sections: «All» or warm-up, run, recovery and cool-down.`));
   else if(!a.km||!(a.mov||a.avgPace))throw new Error('In den Screenshots wurden keine vollständigen Laufdaten erkannt. Nötig sind mindestens Distanz und Zeit oder Pace. Am besten die Übersicht der Aktivität mit gut lesbaren Zahlen verwenden, oder die Werte von Hand eintragen.');
@@ -337,14 +362,16 @@ function analyzeActivity(raw){
     let hs=0,ht=0;work.forEach(l=>{const h1=segHr(l.a,l.b);if(h1){hs+=h1*(l.b-l.a);ht+=l.b-l.a}});
     const md=wd/work.length,mt=wt/work.length;
     iv={n:work.length,wt:Math.round(wt),pace:wt/wd*1000,hr:ht?Math.round(hs/ht):null,reps:work.map(l=>{const d=l.dist!=null?l.dist:D[l.b]-D[l.a],t=l.tt||l.b-l.a,h=segHr(l.a,l.b);return{t:Math.round(t),d:Math.round(d)/1000,p:d>0?Math.round(t/d*1000):null,hr:h?Math.round(h):null,s:l.a,e:l.b}}),rep:md>=350?`~${fk(Math.round(md/100)/10)} km`.replace('~1 km','~1000 m').replace(/~0[.,](\d) km/,'~$100 m'):`~${Math.round(mt)} s`,how}}
-  // decoupling: continuous runs over 15 km, moving time after a 10-minute warm-up, split into equal halves
-  let dec=null;
-  if(!iv&&hasHr&&dist>15000){const ms=[];let c=0;for(let s=0;s<T;s++)if(moving(s)){c++;if(c>600&&HR[s])ms.push(s)}
-    if(ms.length>1200){const half=Math.floor(ms.length/2),ef=arr=>{let dd=0,hh=0;arr.forEach(s=>{dd+=D[s+1]-D[s];hh+=HR[s]});return(dd/arr.length)/(hh/arr.length)};
-      const e1=ef(ms.slice(0,half)),e2=ef(ms.slice(half));dec=Math.round((e1-e2)/e1*1000)/10}}
+  // decoupling: continuous runs of 45 minutes or more, in 1-minute pieces of moving time, grade-adjusted from the elevation (see decFrom)
+  let dec=null,decNote=null,decSeg=null,decCh=null;
+  if(!iv&&hasHr&&mov>=2700){const hasAlt=ALT.some(a=>!isNaN(a)),R=[];let cur={t:0,d:0,h:0,g:0,gn:0};
+    for(let s=0;s<T;s++){if(!moving(s)||!HR[s])continue;const dd=D[s+1]-D[s];cur.t++;cur.d+=dd;cur.h+=HR[s];
+      if(hasAlt){const a=Math.max(0,s-15),b=Math.min(T,s+15),run=D[b]-D[a];if(run>20&&!isNaN(ALT[a])&&!isNaN(ALT[b])){cur.g+=dd*gapF((ALT[b]-ALT[a])/run*100);cur.gn+=dd}}
+      if(cur.t>=60){const km=cur.d/1000;if(km>0)R.push({t:cur.t,d:km,hr:cur.h/cur.t,g:hasAlt&&cur.gn>cur.d*.8?cur.t/km/(cur.g/cur.gn):null});cur={t:0,d:0,h:0,g:0,gn:0}}}
+    const D0=decFrom(R,null);if(D0){dec=D0.dec;decNote=D0.why;if(D0.seg){const t0=R.slice(0,D0.seg[0]).reduce((x,r)=>x+r.t,0),t1=R.slice(0,D0.seg[1]+1).reduce((x,r)=>x+r.t,0);decSeg=[Math.round(t0/60),Math.round(t1/60),'min']}decCh=D0.ch||null}}
   // kilometre splits (time and heart rate per km), e.g. to find a race-pace section
   const splits=[];{let s0=0;for(let k=1;k*1000<=D[T]-D[0];k++){let s=s0;while(s<T&&D[s]-D[0]<k*1000)s++;let h=0,n=0;for(let q=s0;q<s;q++)if(HR[q]){h+=HR[q];n++}splits.push({dist:1,time:s-s0,pace:s-s0,hr:n?Math.round(h/n):null});s0=s}}
-  const out={date:iso(new Date(t0*1000)),km:Math.round(dist/100)/10,mov,avgPace:mov?mov/(D[T]-D[0])*1000:null,avgHr:hasHr?Math.round(raw.total.hr||hrS/hrN):null,hrMax:hasHr?(()=>{const h=R.map(r=>r.hr).filter(x=>x>40&&x<235);let mx=0;for(let i=4;i<h.length;i++){const a=(h[i]+h[i-1]+h[i-2]+h[i-3]+h[i-4])/5;if(a>mx)mx=a}return mx?Math.round(mx):null})():null,gain:Math.round(gain||0),iv,dec,splits:splits.length>=3?splits:null};
+  const out={date:iso(new Date(t0*1000)),km:Math.round(dist/100)/10,mov,avgPace:mov?mov/(D[T]-D[0])*1000:null,avgHr:hasHr?Math.round(raw.total.hr||hrS/hrN):null,hrMax:hasHr?(()=>{const h=R.map(r=>r.hr).filter(x=>x>40&&x<235);let mx=0;for(let i=4;i<h.length;i++){const a=(h[i]+h[i-1]+h[i-2]+h[i-3]+h[i-4])/5;if(a>mx)mx=a}return mx?Math.round(mx):null})():null,gain:Math.round(gain||0),iv,dec,decNote,decSeg,decCh,splits:splits.length>=3?splits:null};
   // per-second samples for plan-guided detection and manual marking; not enumerable, so they are never saved or synced
   Object.defineProperty(out,'ser',{value:{D,HR,ALT,V,T,mov:Uint8Array.from({length:T},(_,s)=>moving(s)?1:0)},enumerable:false});
   return out

@@ -276,7 +276,7 @@ Gelten die Abschnitte als Intervalle, zählen nur die Belastungsphasen. Beim Pul
   - **Marathontempo-Effizienz:** Marathontempo-Lauf und Renntempo-Test, nur Block bzw. Testabschnitt.
   - Keine Effizienz bei VO₂max-Intervallen, Renntempo-Intervallen, Fahrtspiel, Bergintervallen und Wettkämpfen: Bei kurzen, harten Wiederholungen hinkt der Puls hinterher. Bewertet werden Tempo, Gleichmässigkeit und Anstrengung.
   - Ein Mittel über den ganzen Tempolauf (mit Ein- und Auslaufen) wird nie verwendet: Es hängt vor allem davon ab, wie lange ein- und ausgelaufen wurde.
-- **Decoupling** (Long Runs über 15 km): Verhältnis Tempo/Puls in der 1. gegen die 2. Hälfte, nach 10 Minuten Einlaufen. Unter 5 % gilt als gute aerobe Grundlage.
+- **Decoupling** (gleichmässige Läufe ab 45 Minuten, im Feedback bei langen Läufen ab 10 km): Verhältnis Tempo/Puls in der 1. gegen die 2. Hälfte, nach 10 Minuten Einlaufen. Unter 5 % gilt als gute aerobe Grundlage. Steigungsbereinigt mit der steigungsangepassten Pace (Garmin SAP, Strava GAP) bzw. aus den Höhendaten der Datei (Kostenfaktor pro Steigung wie beim Streckenprofil). Ohne diese Angaben und bei mehr als 12 Hm/km: nicht bewertet. Ist die 2. Hälfte mehr als 4 % schneller (Steigerungslauf, Endbeschleunigung), wird der längste gleichmässige Teil bewertet (mind. 30 Minuten, jede Runde innerhalb ±3 % ihres Medians, bei 1-Minuten-Stücken ±6 %; erste Runde wegen Pulsverzögerung weggelassen); gibt es keinen, bleibt das Decoupling leer.
 - **Trainingsbelastung:** Dauer × Anstrengung (Session-RPE nach Foster), verglichen mit dem Schnitt der 4 Wochen davor. Ein Verhältnis von 0.8–1.3 gilt als sicher.
 - **Wochenumfang:** Ziegelmauer der letzten 4 Wochen.
 
@@ -284,7 +284,7 @@ Gelten die Abschnitte als Intervalle, zählen nur die Belastungsphasen. Beim Pul
 
 - Die Logik ersetzt keinen Trainer und keine medizinische Abklärung.
 - Ohne Pulsdaten fehlen Effizienz und Decoupling.
-- Höhenmeter werden beim Decoupling nicht herausgerechnet; hügelige Long Runs können den Wert verfälschen.
+- Höhenmeter: Ohne steigungsangepasste Pace aus Screenshots können Steigungen nur grob (über die Gesamt-Höhenmeter) berücksichtigt werden; sehr hügelige Läufe werden dann nicht bewertet.
 
 
 ## Trainingsfeedback und Note

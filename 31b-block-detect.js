@@ -1,3 +1,8 @@
+// decoupling line for the import box and the feedback
+function decTxt(a,long){if(!a)return'';const seg=a.decSeg?(a.decSeg[2]==='min'?T(`Minute ${a.decSeg[0]}–${a.decSeg[1]}`,`minute ${a.decSeg[0]}–${a.decSeg[1]}`):T(`km ${a.decSeg[0]}–${a.decSeg[1]}`,`km ${a.decSeg[0]}–${a.decSeg[1]}`)):'';
+  if(a.dec!=null)return` · Decoupling ${fk(a.dec)} %${a.decNote==='gap'?T(' (steigungsbereinigt)',' (grade-adjusted)'):a.decNote==='seg'?T(` (gleichmässiger Teil, ${seg})`,` (steady part, ${seg})`):''}`;
+  if(a.decNote==='prog')return T(` · Decoupling nicht bewertet: 2. Hälfte ${a.decCh||''} % schneller`,` · decoupling not rated: 2nd half ${a.decCh||''} % faster`);
+  if(a.decNote==='hilly')return T(' · Decoupling nicht bewertet: zu hügelig ohne steigungsbereinigte Pace (SAP/GAP)',' · decoupling not rated: too hilly without grade-adjusted pace (GAP)');return''}
 // ---- work phases without laps: planned session as a guide, long tempo blocks, manual marking ----
 // planned work phases from the session text, e.g. «16 min am Stück», «6 × 1000 m», «3 × (5 × 400 m)», «1-2-3-2-1 km», «8 min …, dann 8 min …»
 function planShape(pl){

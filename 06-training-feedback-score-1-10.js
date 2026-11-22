@@ -102,8 +102,9 @@ function rateRun(l,date,shallow){
     else if(l.rpe>=E[0]&&l.rpe<=E[1]){ea+=.5}
     else if(qual&&l.rpe<E[0]-1)plus.push(T(`Anstrengung nur ${l.rpe}/10: Reserven vorhanden.`,`Effort only ${l.rpe}/10: there is reserve.`))}
   // 5) long runs: aerobic decoupling
-  if(l.dec!=null){pos+=1;if(l.dec<5){ea+=1;plus.push(T(`Decoupling ${fk(l.dec)} %: Die Grundlage trägt über die ganze Distanz.`,`Decoupling ${fk(l.dec)} %: your aerobic base carries the whole distance.`))}
-    else if(l.dec>8){lo+=1;minus.push(T(`Decoupling ${fk(l.dec)} %: Der Puls stieg in der zweiten Hälfte stark.`,`Decoupling ${fk(l.dec)} %: heart rate rose strongly in the second half.`));tips.push(T('Langsamer starten und ab 60 min regelmässig trinken und Kohlenhydrate zuführen.','Start slower and drink and take carbohydrates regularly from 60 min.'))}}
+  const dSeg=l.impSum&&l.impSum.decNote==='seg'&&l.impSum.decSeg?T(` (gleichmässiger Teil, ${l.impSum.decSeg[2]==='min'?'Minute':'km'} ${l.impSum.decSeg[0]}–${l.impSum.decSeg[1]})`,` (steady part, ${l.impSum.decSeg[2]==='min'?'minute':'km'} ${l.impSum.decSeg[0]}–${l.impSum.decSeg[1]})`):l.impSum&&l.impSum.decNote==='gap'?T(' (steigungsbereinigt)',' (grade-adjusted)'):'';
+  if(l.dec!=null){pos+=1;if(l.dec<5){ea+=1;plus.push(T(`Decoupling ${fk(l.dec)} %${dSeg}: Die Grundlage trägt über die ganze Distanz.`,`Decoupling ${fk(l.dec)} %${dSeg}: your aerobic base carries the whole distance.`))}
+    else if(l.dec>8){lo+=1;minus.push(T(`Decoupling ${fk(l.dec)} %${dSeg}: Der Puls stieg in der zweiten Hälfte stark.`,`Decoupling ${fk(l.dec)} %${dSeg}: heart rate rose strongly in the second half.`));tips.push(T('Langsamer starten und ab 60 min regelmässig trinken und Kohlenhydrate zuführen.','Start slower and drink and take carbohydrates regularly from 60 min.'))}}
   // 6) comparison with similar sessions
   let cmp=null,trend=null,hist=[],tab=null;
   if(!shallow){

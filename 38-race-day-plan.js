@@ -104,7 +104,7 @@ function saveLf(f){const t=today(),err=m=>({err:m});
       if(!(km>=.5&&km<=150))return err('Bitte die Distanz in km eingeben.');
       const p=parsePace(f.pace);if(Number.isNaN(p)||(p!==null&&(p<120||p>1200)))return err('Pace bitte als min:sek eingeben, z. B. 5:20.');
       let dec=null,hh=null;
-      if(f.type==='long'&&f.imp&&f.imp.dec!=null&&km>15)dec=f.imp.dec;
+      if(f.type==='long'&&f.imp&&f.imp.dec!=null&&km>=10)dec=f.imp.dec;
       else if((f.type==='long'&&km>15||f.type==='mptest')&&f.keepDec!=null&&!(f.h1p||f.h2p))dec=f.keepDec;
       else if((f.type==='long'||f.type==='mptest')&&(f.h1p||f.h2p||f.h1h||f.h2h)){const a1=parsePace(f.h1p),a2=parsePace(f.h2p),b1=+f.h1h,b2=+f.h2h;
         if(!a1||!a2||Number.isNaN(a1)||Number.isNaN(a2)||!(b1>=60&&b1<=230)||!(b2>=60&&b2<=230))return err('Für das Decoupling bitte Pace und Puls beider Hälften eingeben, oder die Felder leer lassen.');

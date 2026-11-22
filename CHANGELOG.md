@@ -1,5 +1,20 @@
 # Versionsverlauf
 
+## 4.1.2 – November 2026
+
+- **Strava-Zwischenzeiten werden erkannt** (Km · Tempo · Anstieg · HF): Pace, Puls und Höhendifferenz pro Kilometer, daraus Distanz, Dauer, Ø Puls, Höhenmeter (Näherung: halbe Summe der Höhendifferenzen) und das Decoupling.
+- **Texterkennung:** Breite farbige Balken (Strava-Zwischenzeiten, Karten) werden vor dem Lesen ausgeblendet; vorher machten sie die Zahlen daneben unlesbar. «459» wird bei Kilometer-Zwischenzeiten als 4:59 gelesen.
+- Höhendifferenz pro Kilometer: Die Texterkennung verliert oft das Minuszeichen. Steigungsbereinigt wird darum nur, wenn die Summe der Anstiege zu den Höhenmetern einer Übersicht passt (±8 %); sonst zählt nur, wie hügelig der Lauf ist.
+- Auch ein einzelner Screenshot durchläuft jetzt die volle Auswertung (Summen, Decoupling).
+
+## 4.1.1 – November 2026
+
+- **Decoupling wird selbst ausgefüllt** – aus Dateien (jetzt ab 45 Minuten statt erst ab 15 km) und aus Garmin-Runden-Screenshots, auch wenn die Tabelle über mehrere Screenshots verteilt ist (die Rundennummer bestimmt die Reihenfolge; falsch gelesene Gesamtzeiten stören nicht mehr). Komplette Rundentabellen liefern zudem Distanz und Dauer.
+- **Höhenprofil berücksichtigt:** Mit der steigungsangepassten Pace (Garmin «SAP», Strava «GAP») bzw. den Höhendaten der Datei wird das Decoupling steigungsbereinigt gerechnet. Ohne diese Angaben und bei mehr als 12 Höhenmetern pro km wird es nicht bewertet.
+- **Steigerungsläufe:** Ist die 2. Hälfte mehr als 4 % schneller, wäre der Vergleich geschönt. Dann bewertet die App den längsten gleichmässigen Teil (mindestens 30 Minuten), z. B. «Decoupling 4.9 % (gleichmässiger Teil, km 9–16)».
+- Reine Kilometer-Rundentabellen (Auto-Lap) werden nicht mehr fälschlich als Intervalle erkannt.
+- Texterkennung: «Gesamtzeit» auch bei abgeschnittenem G, «1:23:021» und «58069 100» werden korrigiert.
+
 ## 4.1.0 – November 2026 · Neues Design «Sportgerät» (Teil 2, komplett)
 
 - **Training:** Umschalter Erfassen / Trainingsplan / Einträge in schmalen Grossbuchstaben. Nebenaktionen (Alternativtraining, Verschieben, Nicht durchgeführt, Weiteres Training, Pause) als ruhige Knöpfe statt unterstrichener Links. Kein schwebender Knopf mehr, das Erfassen sitzt direkt unter dem Training.

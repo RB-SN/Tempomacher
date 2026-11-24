@@ -201,3 +201,15 @@ function testRate(l,km){const c=l.core||(l.km&&(l.sec||l.pace)?{km:l.km,sec:l.se
   if(!full&&l.refSet)tips.push(T('Lief der Test nicht voll? Dann ist der Leistungsindex eher zu tief und die Paces etwas zu ruhig. Wiederhole ihn in 3–4 Wochen ausgeruht.','Was the test not a full effort? Then the index is rather too low and the paces a bit too calm. Repeat it rested in 3–4 weeks.'));
   const score=clamp(Math.round(sc),1,10);
   return{score,ty:'test',verdict:score>=8?T('Starker Test: verlässliche Grundlage für Paces und Zonen.','Strong test: a reliable basis for paces and zones.'):score>=6?T('Test brauchbar ausgewertet.','Test analysed and usable.'):T('Test mit Vorbehalt: eher nicht voll ausgereizt.','Test with reservations: probably not a full effort.'),plus,minus,tips,cmp:null,trend:null,hist:[]}}
+// ---- strides and hill sprints after easy runs (speed reserve and leg stiffness, hardly any fatigue) ----
+function strideUp(q){if(q&&q.structure&&q.structure.length>1)q.structure[q.structure.length-1]=T('Danach 6–8 × 20 s Steigerungen: flach, am besten auf Gras, bis etwa 95 % steigern, dazwischen 60 s gehen','Then 6–8 × 20 s strides: flat, ideally on grass, build up to about 95 %, walk 60 s in between')}
+function addSprints(q,n){if(!q)return;q.title=T('Lockerer Lauf + Bergsprints','Easy run + hill sprints');q.sprints=n;
+  q.structure=[q.structure[0],T(`Danach ${n}–${n+2} × 8–10 s maximal schnell einen steilen Hügel hoch (6–10 %)`,`Then ${n}–${n+2} × 8–10 s all-out up a steep hill (6–10 %)`),T('Pause: 2 min, langsam zurückgehen, jeder Sprint voll erholt','Recovery: 2 min, walk back down slowly, every sprint fully recovered')];
+  q.note=T('Die Sprints sind so kurz, dass kaum Laktat entsteht: Sie trainieren Kraft, Abdruck und Nervensystem und machen dein Renntempo ökonomischer. Explosiv, aber sauber; aufhören, wenn der Schritt schlechter wird.','The sprints are so short that hardly any lactate builds up: they train strength, push-off and the nervous system and make your race pace more economical. Explosive but clean; stop when your stride gets worse.')}
+// ---- strength block: tick it off (synced, counted in the milestones) ----
+const strIsDone=d=>!!(S.strDone&&S.strDone[d]&&S.strDone[d].v);
+function strTick(date){if(!date||date>today())return'';const on=strIsDone(date);
+  return`<div style="margin-top:8px"><button type="button" class="btn small ${on?'':'ghost'}" data-act="strTog" data-d="${date}" aria-pressed="${on}">${on?T('✓ Kraft erledigt','✓ Strength done'):T('Kraft erledigt?','Strength done?')}</button></div>`}
+const MS_STR=[5,10,25,50,100];
+function strRow(row,chip){const n=Object.values(S.strDone||{}).filter(x=>x&&x.v).length;if(!n&&S.profile.strength===false)return'';const nx=MS_STR.find(x=>n<x);
+  return row(T('Krafttraining','Strength sessions'),MS_STR.map(x=>chip(n>=x,x)).join(''),n?nx?T(`${n} erledigt, noch ${nx-n} bis ${nx}`,`${n} done, ${nx-n} to go until ${nx}`):'':T('Hake den Block «Plus: Kraft» ab, wenn du ihn gemacht hast.','Tick off the «Plus: strength» block when you have done it.'))}

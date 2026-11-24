@@ -1,5 +1,15 @@
 # Versionsverlauf
 
+## 4.2.3 – November 2026
+
+- **Krafttraining abhaken:** Der Block «Plus: Kraft» hat ein Häkchen «Kraft erledigt?». Es wird zwischen den Geräten synchronisiert und in den Meilensteinen gezählt (5, 10, 25, 50, 100 Krafteinheiten).
+
+## 4.2.2 – November 2026
+
+- **Bergsprints:** Ein lockerer Lauf pro Woche bekommt neu 6–10 × 8–10 s maximal bergauf mit 2 min Gehpause (statt Steigerungen). Trainiert Kraft, Abdruck und Tempo-Reserve fast ohne Ermüdung. Gibt es nur einen Platz pro Woche, wechseln Steigerungen und Bergsprints ab.
+- **Steigerungen:** 6–8 × 20 s statt 5 ×, mit Hinweis «flach, am besten auf Gras, bis etwa 95 %». Sie können neu auch am Tag vor dem langen Lauf stehen.
+- Die bisherigen «Kurzen Bergsprints» (30 s) heissen neu «Kurze Bergintervalle», weil sie Kraftausdauer trainieren.
+
 ## 4.2.1 – November 2026
 
 - **Testlauf mit Note und Feedback:** Bewertet werden die Einteilung (1. gegen 2. Hälfte des Testabschnitts), der Puls (typisch für eine volle Anstrengung über diese Distanz?), die Anstrengung und was der Test verändert hat («Leistungsindex steigt von 42.5 auf 45.3»). Lief der Test nicht voll, sagt die App, dass die Paces eher zu ruhig sind, und schlägt eine Wiederholung vor. Wird der Test nicht als Referenz übernommen (Laborwerte, neuere Referenz), steht der Grund dabei.

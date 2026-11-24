@@ -95,6 +95,7 @@ function mergeState(L,R,base){
   B.checkins=B.checkins||{};Object.keys(O.checkins||{}).forEach(k=>{if(!B.checkins[k])B.checkins[k]=O.checkins[k]});
   const un=(f)=>{const a=B[f]||[],b=O[f]||[],m=new Map(a.map(x=>[x.id,x])),ob=new Map(b.map(x=>[x.id,x]));
     ob.forEach((x,id)=>{m.set(id,m.has(id)?pick(m.get(id),x):x)});return[...m.values()].filter(x=>!gone(f,x.id,a.some(y=>y.id===x.id),ob.has(x.id)))};
+  {const a=B.strDone||{},b=O.strDone||{};Object.keys(b).forEach(k=>{if(!a[k]||(b[k].at||0)>(a[k].at||0))a[k]=b[k]});if(Object.keys(a).length)B.strDone=a}
   B.extra=un('extra');B.pbs=un('pbs');B.races=un('races');if(B.shoes||O.shoes)B.shoes=un('shoes');
   B.updatedAt=Date.now();return B}
 let syncBusy=false,syncAgain=false,pushT=null;
@@ -403,7 +404,7 @@ function renderTabs(){
   t.innerHTML=`<div class="in">${tabs.map(([k,l])=>`<button data-act="tab" data-v="${k}" ${ui.tab===k?'aria-current="page"':''}>${ICONS[k]}${l}</button>`).join('')}</div>`;
 }
 function render(){try{renderInner();addInfo($('#app'))}catch(e){showFatal((e&&e.stack)||e)}}
-const APP_VER='4.2.1';
+const APP_VER='4.2.3';
 const footer=()=>`<footer class="copy">© ${new Date().getFullYear()} Ramon Betschart. Alle Rechte vorbehalten.<br><span style="opacity:.7">Version ${APP_VER}</span></footer>`;
 function renderInner(){
   if(S)migrate();

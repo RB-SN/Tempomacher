@@ -169,7 +169,7 @@ Jede Qualitätseinheit wird aus einer Bibliothek von Formen mit gleicher Wirkung
 | Art | Formen |
 |---|---|
 | Fahrtspiel | 1 min / 1 min, 2 min / 1 min, Pyramide 1-2-3-2-1 min, 30/30, Mona-Fartlek (90-60-30-15 s), Leiter 3-2-1 min |
-| Hügel | 60 s, 30 s steil, 2 min lang, Pyramide 30-60-90-60-30 s |
+| Hügel | 60 s, 30 s steil («Kurze Bergintervalle»), 2 min lang, Pyramide 30-60-90-60-30 s |
 | Tempolauf | am Stück, 2 × oder 3 × mit kurzer Trabpause, progressiv |
 | Schwelle | 1000 m, 1.6 km, 2 km, 3 km, Pyramide, 6 min (Trabpause 60 s bis 2 min) |
 | VO₂max | 800 m, 1000 m (400 m Trab), 1200 m, 3 min (2 min Trab), Pyramide 400–1200 m, 2–3 × 5 × 400 m |
@@ -177,6 +177,10 @@ Jede Qualitätseinheit wird aus einer Bibliothek von Formen mit gleicher Wirkung
 | Marathontempo | am Stück, 2 × mit 1 km locker, Wechsel 2 km / 1 km, progressiv |
 
 Jede Einheit nennt Pace (oder Gefühl), Trabpause und den Pulsbereich der Belastungen. Bei kurzen Intervallen gilt er gegen Ende der Wiederholung, weil der Puls nachhinkt. Renntempo hat überall denselben Bereich (Marathon 78–88 %, Halbmarathon 84–91 % der HFmax), auch in der Testauswertung und im Renntag-Plan. Schwellenarbeit pro Einheit höchstens rund 8 km (Daniels: etwa 10 % des Wochenumfangs).
+
+### Steigerungen und Bergsprints
+
+Nach lockeren Läufen (nicht in Erholungs- und Tapering-Wochen) bis zu zweimal pro Woche **Steigerungen**: 6–8 × 20 s flach, bis etwa 95 % steigern, 60 s gehen. Eine davon wird ab etwas Lauferfahrung zu **Bergsprints**: 6–8 (Basisphase) bzw. 8–10 × 8–10 s maximal einen steilen Hügel hoch (6–10 %), 2 min Gehpause. Gibt es pro Woche nur einen Platz, wechseln Steigerungen und Bergsprints wöchentlich ab. Die Sprints sind zu kurz, um viel Laktat zu bilden: Sie trainieren Kraft, Abdruck und Nervensystem und vergrössern die Tempo-Reserve, ohne die Erholung zu belasten.
 
 ### Verteilung der harten Einheiten
 
@@ -365,7 +369,7 @@ Von dir angepasste Werte ersetzen pro Zone die berechneten Puls- bzw. Pacebereic
 
 ## Kraft & Mobilität
 
-Zweimal pro Woche (nicht in Tapering-, Erholungs- und Rennwochen) bekommt ein lockerer Lauf einen Zusatzblock von 15–20 Minuten mit zwei abwechselnden Übungsfolgen (Kniebeugen, Ausfallschritte, einbeiniges Wadenheben, Seitstütz bzw. einbeiniges Kreuzheben, Beckenheben, Step-ups, Unterarmstütz, Mobilisation). Krafttraining senkt das Verletzungsrisiko im Sport deutlich (Lauersen et al. 2014) und verbessert die Laufökonomie.
+Zweimal pro Woche (nicht in Tapering-, Erholungs- und Rennwochen) bekommt ein lockerer Lauf einen Zusatzblock von 15–20 Minuten mit zwei abwechselnden Übungsfolgen (Kniebeugen, Ausfallschritte, einbeiniges Wadenheben, Seitstütz bzw. einbeiniges Kreuzheben, Beckenheben, Step-ups, Unterarmstütz, Mobilisation). Krafttraining senkt das Verletzungsrisiko im Sport deutlich (Lauersen et al. 2014) und verbessert die Laufökonomie. Der Block lässt sich abhaken («Kraft erledigt?»); erledigte Krafteinheiten werden synchronisiert und in den Meilensteinen gezählt.
 
 ## Hitze
 

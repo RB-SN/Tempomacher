@@ -233,7 +233,7 @@ const W={
       structure:[T('2 km einlaufen','2 km warm-up'),...st,T(`Puls gegen Ende der zügigen Abschnitte ${Z}`,`Heart rate towards the end of the brisk sections ${Z}`),T('1.5 km auslaufen','1.5 km cool-down')],note:T('Zügig heisst etwa 10-km-Renngefühl, nicht sprinten. Abwechslung hält den Kopf frisch, die Wirkung ist dieselbe.','Brisk means about 10 km race feel, no sprinting. Variety keeps you fresh; the effect is the same.')})},
   hills(c,j){const b0=c.exp===0,v=vix(c,'h')%4,Z=hz(c,'Z4');let st,ws,reps,t;
     if(v===0){const n=b0?Math.min(4+j,8):Math.min(6+j,10);ws=n*60;reps=n;t=T('Hügelsprints 60 s','Hill reps 60 s');st=[T(`${n} × 60 s bergauf zügig (Anstrengung 8/10)`,`${n} × 60 s uphill brisk (effort 8/10)`),T('Trabpause: locker zurücktraben (ca. 90 s)','Recovery: jog back down easily (about 90 s)')]}
-    else if(v===1){const n=Math.min(8+j,12);ws=n*30;reps=n;t=T('Kurze Bergsprints','Short hill sprints');st=[T(`${n} × 30 s steil bergauf, kräftig (9/10)`,`${n} × 30 s up a steep hill, powerful (9/10)`),T('Pause: zurückgehen oder sehr locker traben (ca. 90 s)','Recovery: walk or jog very easily back down (about 90 s)')]}
+    else if(v===1){const n=Math.min(8+j,12);ws=n*30;reps=n;t=T('Kurze Bergintervalle','Short hill reps');st=[T(`${n} × 30 s steil bergauf, kräftig (9/10)`,`${n} × 30 s up a steep hill, powerful (9/10)`),T('Pause: zurückgehen oder sehr locker traben (ca. 90 s)','Recovery: walk or jog very easily back down (about 90 s)')]}
     else if(v===2){const n=b0?3:Math.min(4+Math.floor(j/2),6);ws=n*120;reps=n;t=T('Lange Hügel','Long hills');st=[T(`${n} × 2 min an einem längeren Anstieg (4–6 %), kontrolliert hart (7–8/10)`,`${n} × 2 min on a longer climb (4–6 %), controlled hard (7–8/10)`),T('Trabpause: locker zurücktraben (ca. 2–3 min)','Recovery: jog back down easily (about 2–3 min)')]}
     else{const P=j>=2?[30,60,90,60,30,60,30]:[30,60,90,60,30];ws=P.reduce((a,b)=>a+b,0);reps=P.length;t=T('Hügel-Pyramide','Hill pyramid');st=[T(`Bergauf ${P.join('-')} s zügig`,`Uphill ${P.join('-')} s brisk`),T('Trabpause: jeweils locker zurücktraben','Recovery: jog back down easily each time')]}
     return mk(c,{type:'hills',title:t,km:2.5+2*ws/(c.pc.T*1.15)+2,zone:'Z4',pace:null,interval:true,quality:true,reps,
@@ -558,7 +558,7 @@ function makeWeek(c,i,ph,j,rec,km){c.wi=i;c.wkKm=km;
   if(d<=25&&(lv==='mlong'||lv==='progress')&&nQ>=2&&c.style!=='hard'&&!c.amb){const drop=ph==='peak'?['cruise','vo2','tempo']:['rp'];for(const x of qD)if(arr[x]&&drop.includes(arr[x].type)){arr[x]=W.easy(c,Math.min(arr[x].km,10));break}}
   if(d>43&&(ph==='build'||ph==='peak')&&!rec&&days>=5){const b=(ld+6)%7;if(pat.includes(b)&&!arr[b])arr[b]=W.long(c,longKm*.55,'b2b')}
   const easyDays=pat.filter(x=>!arr[x]);
-  return fillEasy(c,arr,easyDays,km,longKm,{drop:days>=4&&(ph==='base'||ph==='taper'||rec),medium:!rec&&ph!=='taper'&&days>=4,strides:!runwalk&&!rec&&ph!=='taper'&&(p.exp>=1||i>=2),vary:!runwalk&&!rec&&ph!=='taper',runwalk,rws});
+  return fillEasy(c,arr,easyDays,km,longKm,{drop:days>=4&&(ph==='base'||ph==='taper'||rec),medium:!rec&&ph!=='taper'&&days>=4,strides:!runwalk&&!rec&&ph!=='taper'&&(p.exp>=1||i>=2),sprints:!runwalk&&!rec&&ph!=='taper'&&p.exp>=1?(ph==='base'?6:8):0,vary:!runwalk&&!rec&&ph!=='taper',runwalk,rws});
 }
 // easy days: short recovery run after a hard day, one medium-long run mid-week, the rest normal; distances vary week to week.
 // In calmer phases (general, base, recovery and taper weeks) one easy day becomes optional, so the number of runs follows the phase.
@@ -581,17 +581,17 @@ function fillEasy(c,arr,easyDays,km,longKm,o){const p=c.p,ld=longDayOf(p),minE=p
     else{const c2=E.filter(x=>role[x]!=='m'&&role[x]!=='pl');if(c2.length>=2){const al=c2.find(x=>{const q=arr[(x+6)%7];return q&&q.type==='long'});const sd=al!=null?al:c2[i%c2.length];role[sd]='s';c2.forEach(x=>{if(x!==sd&&role[x]==='rec')role[x]='rl'})}}}
   const wig=[1,1.12,.9,1.05,.95][i%5],w={rec:.7,rl:1.05,n:1,m:0,s:.68,pl:.6};let mKm=med!=null?Math.min(longKm*.78,rest*.4):0;
   const sw=E.reduce((a,x)=>a+(role[x]==='m'?0:w[role[x]]*(E.indexOf(x)%2?wig:2-wig)),0),unit=sw?(rest-mKm)/sw:0;
-  let strides=0,varied=false;const stN=p.exp>=1?2:1;
+  let strides=0,varied=false,spr=false;const stN=p.exp>=1?2:1;
   // one easy run per week gets its own form; after a hard day only calm forms (trail, drills)
   const nonS=E.filter(x=>role[x]==='n'||role[x]==='m'&&o.gen),vRec=!nonS.length,vday=nonS.length?nonS[i%nonS.length]:(E.filter(x=>role[x]==='rl').concat(E.filter(x=>role[x]==='rec'||role[x]==='s')).slice(0,1)[0]??null);
   E.forEach(x=>{const r=role[x];let k=r==='pl'?Math.min(10,Math.max(minE,unit*w.pl)):r==='m'?mKm:Math.max(r==='rec'||r==='s'||r==='rl'||r==='pl'?Math.max(3,minE-1):minE,unit*w[r]*(r==='s'?1:E.indexOf(x)%2?wig:2-wig));k=Math.min(k,Math.max(minE,longKm*(r==='m'?.8:o.ecap||.7)));if(r!=='m'&&med!=null)k=Math.min(k,Math.max(minE,mKm*.85));
     const vk=o.vary&&!o.runwalk&&x===vday?(()=>{const ks=['abc','trail','prog','strides'].filter(z=>z!=='prog'||p.exp>=1&&k>=6&&k<=16&&!vRec).filter(z=>z!=='trail'||k<=14).filter(z=>!vRec||z!=='strides');return ks[i%ks.length]})():null;
     if(vk){varied=true;arr[x]=W.easyVar(c,k,vk);return}
-    const st=(r==='n'||r==='s')&&strides<stN&&o.strides;if(st)strides++;
+    const st=(r==='n'||r==='s'||r==='pl')&&strides<stN&&o.strides;if(st)strides++;const sp=st&&!!o.sprints&&!spr&&(E.filter(z=>['n','s','pl'].includes(role[z])&&!(o.vary&&z===vday)).length>=2||i%2===0);if(sp)spr=true;
     if(o.runwalk)arr[x]=W.easy(c,k,{runwalk:o.rws});
     else if(r==='rec'&&k<=8&&!o.gen){const q=W.recovery(c,k);arr[x]=q}
     else if(r==='m'){const q=W.easy(c,k);q.title=T('Mittellanger Lauf','Medium-long run');q.structure=[T(`${fk(r05(k))} km locker und gleichmässig im Grundlagentempo`,`${fk(r05(k))} km easy and steady at base pace`)];q.note=T('Der zweite Ausdauerreiz der Woche neben dem langen Lauf: Er baut die Grundlage aus, ohne so lange zu erholen wie ein langer Lauf.','The second endurance stimulus of the week besides the long run: it builds your base without the recovery cost of a long run.');arr[x]=q}
-    else arr[x]=o.gen?W.easyFree(c,k,st):W.easy(c,k,{strides:st})});
+    else{arr[x]=o.gen?W.easyFree(c,k,st&&!sp):W.easy(c,k,{strides:st&&!sp});if(st&&!sp)strideUp(arr[x]);if(sp)addSprints(arr[x],o.sprints)}});
   if(opt!=null)arr[opt]=W.optional(c,Math.max(minE,Math.min(8,unit*.8||minE)));
   return arr}
 // General weeks: fewer long runs, a playful session, optional cross-training, easy runs by feel

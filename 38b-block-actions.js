@@ -10,7 +10,8 @@ Object.assign(ACT,{
       if(sp.km&&(sp.kind==='race'||sp.kind==='test')&&Math.abs(st.km/sp.km-1)<=.05)c.km=sp.km;if(sp.kind==='race'||sp.kind==='test')c.h1=halfAt(a.ser,st.a,st.b);
       ui.mkCore=c;partsPrefill(f);ui.mk=null;ui.lfErr='';renderSheet();return}a.iv=markIv(a.ser,ui.mk.a,ui.mk.b);mkAfter(f)},
   mkNone(){const f=ui.lf,a=f&&f.imp;if(!a)return;a.iv=null;mkAfter(f)},
-  addFileAct(){addFilePick()}});
+  addFileAct(){addFilePick()},
+  strTog(el){const d=el.dataset.d;if(!d||d>today())return;S.strDone=S.strDone||{};const on=!(S.strDone[d]&&S.strDone[d].v);S.strDone[d]={v:on?1:0,at:Date.now()};save();render()}});
 // threshold from the watch (profile)
 Object.assign(ACT,{
   wthrEdit(){const w=S.profile.watchThr;ui.wthr=w?{...w}:{date:today()};ui.wthrErr='';render()},

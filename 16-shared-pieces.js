@@ -54,7 +54,7 @@ function sessCard(date,s,label){
   return`<div class="sess"><div class="sess-top" style="${zc}">${s.type!=='rest'?trailSVG(5,5,'rgba(255,255,255,.13)','none').replace('class="trail"','class="sessprints"'):''}${s.type==='alt'||s.type==='race'?`<span class="sess-tag">${s.type==='alt'?'Alternativ':'Wettkampf'}</span>`:''}<div class="sess-k"><div class="label" style="color:var(--band-muted)">${label} · ${fdate(date)}</div>
     <div class="sess-km">${big}<small>${unit}</small></div><div class="sess-t">${esc(s.title)}</div></div></div>
     <div class="sess-b">${s.tag?`<div class="tagline" style="margin:0 0 8px">${esc(s.tag)}</div>`:''}${sessionChips(s)}${whyToday(date,s)}
-    <ul class="struct">${s.structure.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>${capHint(s)?`<p class="caphint">${capHint(s)}</p>`:''}${s.note?`<p class="note">${esc(s.note)}</p>`:''}${addonHTML(s)}</div></div>`;
+    <ul class="struct">${s.structure.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>${capHint(s)?`<p class="caphint">${capHint(s)}</p>`:''}${s.note?`<p class="note">${esc(s.note)}</p>`:''}${addonHTML(s,date)}</div></div>`;
 }
 function weekLane(mon,title){
   const t=today();

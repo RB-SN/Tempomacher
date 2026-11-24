@@ -47,7 +47,7 @@ function coreFromSer(S,sp){let w=null,how='auto';
   // official distance for races and tests on a known distance: the watch usually measures a little more
   if(sp.km&&(sp.kind==='race'||sp.kind==='test')){if(how==='auto')c.sec=Math.round(st.sec*sp.km*1000/Math.max(1,S.D[w.b]-S.D[w.a]));c.km=sp.km}
   if(!sp.km&&!sp.sec&&sp.kind==='test'){const r=Math.round(c.km*2)/2;if(r>=1&&Math.abs(c.km/r-1)<=.03){c.sec=Math.round(c.sec*r/c.km);c.km=r}}
-  if(sp.kind==='race')c.h1=halfAt(S,w.a,w.b);return c}
+  if(sp.kind==='race'||sp.kind==='test')c.h1=halfAt(S,w.a,w.b);return c}
 // from kilometre splits (screenshots): the same, on whole kilometres
 function coreFromSplits(sp,spec){if(!sp||sp.length<3)return null;const R=sp.filter(r=>(r.dist||1)>=.9),tw=r=>r.time||r.pace*(r.dist||1);if(R.length<3)return null;
   let n,i0;if(spec.sec)return null;const k=spec.km;if(!k)return null;n=Math.round(k);if(n<1||n>R.length||Math.abs(n-k)>.25&&!(spec.kind==='race'&&n>=5))return null;
@@ -78,16 +78,16 @@ function partsPrefill(f){const a=f.imp;f.core=null;f.easy=null;f.rw=null;
   if(a){Object.assign(a,a.dec0);a.decPart=null}
   const pl=f.mode==='plan'?plannedFor(f.date):null,sp=coreSpec(f.type,pl,f.date);f.spec=sp;
   if(a&&sp&&sp.kind!=='race'&&sp.kind!=='test'&&IVT.has(f.type))return;
-  let c=null;if(a&&sp&&(sp.km||sp.sec||sp.kind==='race'||sp.kind==='test')){c=a.ser?coreFromSer(a.ser,sp):coreFromSplits(a.splits,sp)}
+  let c=null;if(a&&sp&&(sp.km||sp.sec||sp.kind==='race'||sp.kind==='test')){c=a.ser?coreFromSer(a.ser,sp):coreFromRows(a.lapRows||a.splits,sp)}
   if(c&&ui.mkCore&&ui.mkCore.kind===sp.kind)c=ui.mkCore;
   if(c){f.core=c;f.ckm=String(Math.round(c.km*100)/100);f.csec=fmtTime(c.sec);f.chr=c.hr||''}
   else if(!f.editKey){f.ckm=sp&&sp.km&&(sp.kind==='race'||sp.kind==='test')?String(sp.km):'';f.csec='';f.chr=''}
   // easy part (before the core part): efficiency and decoupling of long runs with a fast finish or a marathon-pace part
   if(a&&c&&['fin','mp','prog'].includes(c.kind)){
     if(a.ser&&c.a>300){const e=serStat(a.ser,0,c.a);f.easy={km:e.km,sec:e.mov,hr:e.hr};if(f.type==='long'){const D0=decRange(a.ser,0,c.a);Object.assign(a,{dec:D0.dec,decNote:D0.why,decSeg:null,decCh:D0.ch||null,decPart:'easy'})}}
-    else if(a.splits&&c.i>0){const E=a.splits.slice(0,c.i),tw=r=>r.time||r.pace*(r.dist||1),t=E.reduce((x,r)=>x+tw(r),0),hs=E.filter(r=>r.hr);
+    else if((a.lapRows||a.splits)&&c.i>0){const E=(a.lapRows||a.splits).slice(0,c.i),tw=r=>r.time||r.pace*(r.dist||1),t=E.reduce((x,r)=>x+tw(r),0),hs=E.filter(r=>r.hr);
       f.easy={km:E.reduce((x,r)=>x+(r.dist||1),0),sec:Math.round(t),hr:hs.length?Math.round(hs.reduce((x,r)=>x+r.hr*tw(r),0)/hs.reduce((x,r)=>x+tw(r),0)):null};
-      if(f.type==='long'){const D0=splitsDec(a.splits,c.i);Object.assign(a,{dec:D0.dec,decNote:D0.why,decSeg:null,decCh:D0.ch||null,decPart:'easy'})}}}
+      if(f.type==='long'){const D0=splitsDec(a.lapRows||a.splits,c.i);Object.assign(a,{dec:D0.dec,decNote:D0.why,decSeg:null,decCh:D0.ch||null,decPart:'easy'})}}}
   // run-walk: running and walking separately; the running part counts for efficiency
   if(a&&a.ser&&['easy','long','recovery'].includes(f.type)&&!(c&&c.kind!=='race'&&c.kind!=='test')){const rw=rwFromSer(a.ser);if(rw&&(rwPlanned(pl)||rw.n>=3)){f.rw=rw;f.easy={km:rw.run.km,sec:rw.run.sec,hr:rw.run.hr};if(a.dec0&&a.dec0.dec!=null){a.dec=null;a.decNote='rw';a.decPart=null}}}}
 // core part from the form fields; {core} or {err}
@@ -161,3 +161,43 @@ async function readRuns(list){if(list.length<2)return readActivity(list[0]);cons
   if(R.length<2)return R[0]||readActivity(list[0]);R.sort((p,q)=>p.raw.recs[0].t-q.raw.recs[0].t);for(let i=1;i<R.length;i++){const e=R[i-1].raw.recs,s=R[i].raw.recs;if(s[0].t-e[e.length-1].t>6*3600)return R[0]}let raw=R[0].raw;for(let i=1;i<R.length;i++)raw=mergeRaw(raw,R[i].raw);
   const c=analyzeActivity(raw);c.src=R[0].src;c.files=R.length;Object.defineProperty(c,'raw',{value:raw,enumerable:false});return c}
 function coreSum(c){return`${coreL(c.kind)} ${T('erkannt','recognised')}: <b>${fk(c.km)} km</b> · ${fmtTime(c.sec)} · Ø ${pace(c.sec/c.km)}${c.hr?T(' · Ø HF ',' · avg. HR ')+c.hr:''}`}
+// lap or split rows from screenshots: distance (km), time (s), heart rate
+function shotRows(L){const R=(L||[]).filter(r=>r&&r.time>0&&r.dist>0).map(r=>({dist:Math.round(r.dist*1000)/1000,time:Math.round(r.time),pace:r.time/r.dist,hr:r.hr||null}));return R.length>=2?R:null}
+// core part from rows of any length: rows that together give the distance (±3 %), else the longest clearly faster group
+function coreFromRows(R,spec){if(!R||R.length<2||spec.sec)return null;const tw=r=>r.time||r.pace*(r.dist||1),pk=(i,j)=>{const S2=R.slice(i,j+1),t=S2.reduce((x,r)=>x+tw(r),0),d=S2.reduce((x,r)=>x+(r.dist||1),0),hs=S2.filter(r=>r.hr);
+    let h1=null;if(S2.length>=2){let q=0,dd=0;for(const r of S2){const rd=r.dist||1;if(dd+rd>=d/2){h1=Math.round(q+tw(r)*(d/2-dd)/rd);break}dd+=rd;q+=tw(r)}}
+    return{i,n:j-i+1,t,d,h1,hr:hs.length?Math.round(hs.reduce((x,r)=>x+r.hr*tw(r),0)/hs.reduce((x,r)=>x+tw(r),0)):null}};
+  let best=null;const k=spec.km;
+  if(k){if(spec.end){let d=0,i=R.length-1;for(;i>=0;i--){d+=R[i].dist||1;if(d>=k*.97)break}if(i>=0&&d<=k*1.03)best=pk(i,R.length-1)}
+    else for(let i=0;i<R.length;i++){let d=0;for(let j=i;j<R.length;j++){d+=R[j].dist||1;if(d>k*1.03)break;if(d>=k*.97){const c=pk(i,j);if(!best||c.t/c.d<best.t/best.d)best=c}}}}
+  else if(spec.kind==='test'||spec.kind==='race'){const ps=R.map(r=>tw(r)/(r.dist||1)),srt=[...ps].sort((a,b)=>a-b),th=(srt[0]+srt[srt.length-1])/2;if(srt[srt.length-1]/srt[0]<1.08)return null;
+    for(let i=0;i<R.length;i++){if(ps[i]>th)continue;let j=i;while(j+1<R.length&&ps[j+1]<=th)j++;const c=pk(i,j);if(c.t>=240&&(!best||c.t>best.t))best=c;i=j}}
+  if(!best)return coreFromSplits(R,spec);
+  const c={kind:spec.kind,how:'laps',i:best.i,n:best.n,km:Math.round(best.d*1000)/1000,sec:Math.round(best.t),hr:best.hr};
+  if(k&&(spec.kind==='race'||spec.kind==='test')){c.km=k}else if(spec.kind==='test'){const r=Math.round(c.km*2)/2;if(r>=1&&Math.abs(c.km/r-1)<=.03)c.km=r}
+  if((spec.kind==='race'||spec.kind==='test')&&best.h1)c.h1=best.h1;return c}
+// rating of a test run: what it changed (performance index), pacing of the test section, heart rate and effort as signs of a full effort
+function testRate(l,km){const c=l.core||(l.km&&(l.sec||l.pace)?{km:l.km,sec:l.sec||Math.round(l.pace*l.km),hr:l.hr}:null);if(!c||!c.km||!c.sec)return null;
+  const plus=[],minus=[],tips=[],hm=hrMax(S.profile),d=c.km,t30=l.s&&l.s.test&&l.s.test.t30;let sc=7,full=true;
+  plus.push(T(`Testabschnitt ${fk(d)} km in ${fmtTime(c.sec)} (Ø ${pace(c.sec/d)}${c.hr?', Ø Puls '+c.hr:''})${km>d+.3?`; gesamt ${fk(km)} km zählen für den Umfang`:''}.`,`Test section ${fk(d)} km in ${fmtTime(c.sec)} (avg. ${pace(c.sec/d)}${c.hr?', avg. HR '+c.hr:''})${km>d+.3?`; ${fk(km)} km in total count for volume`:''}.`));
+  // pacing: second half against the first
+  if(c.h1&&c.h1<c.sec){const ps=((c.sec-c.h1)/c.h1-1)*100;
+    if(ps>5){sc-=1;full=false;minus.push(T(`Zu schnell gestartet: 2. Hälfte ${pctTxt(ps)} langsamer. Der Test unterschätzt dich dann eher.`,`Started too fast: second half ${pctTxt(ps)} slower. The test then tends to underestimate you.`))}
+    else if(ps>2.5){sc-=.5;minus.push(T(`Leicht positiver Split (2. Hälfte ${pctTxt(ps)} langsamer).`,`Slightly positive split (second half ${pctTxt(ps)} slower).`))}
+    else{sc+=1;plus.push(ps<=-1?T(`Negativer Split (2. Hälfte ${pctTxt(-ps).replace('+','')} schneller): stark eingeteilt.`,`Negative split (second half ${pctTxt(-ps).replace('+','')} faster): well paced.`):T(`Gleichmässig eingeteilt (2. Hälfte ${pctTxt(ps)}).`,`Evenly paced (second half ${pctTxt(ps)}).`))}}
+  // heart rate: typical for a full effort over this duration?
+  if(c.hr&&hm){const[lo]=raceHrBand(d),p=c.hr/hm;
+    if(p<lo-.03){sc-=1;full=false;minus.push(T(`Ø Puls ${c.hr} (${Math.round(p*100)} % HFmax) ist tief für einen Test über ${fk(d)} km (üblich ab ${Math.round(lo*100)} %): vermutlich nicht ganz ausgereizt.`,`Avg. HR ${c.hr} (${Math.round(p*100)} % HRmax) is low for a ${fk(d)} km test (typically from ${Math.round(lo*100)} %): probably not fully used.`))}
+    else plus.push(T(`Ø Puls ${c.hr} (${Math.round(p*100)} % HFmax): ein echter Test.`,`Avg. HR ${c.hr} (${Math.round(p*100)} % HRmax): a real test.`))}
+  if(l.rpe){if(l.rpe<7){sc-=.5;full=false;minus.push(T(`Anstrengung ${l.rpe}/10: für einen Test eher locker (gut sind 8–9).`,`Effort ${l.rpe}/10: rather easy for a test (8–9 is right).`))}else if(l.rpe<=9)plus.push(T(`Anstrengung ${l.rpe}/10: richtig dosiert.`,`Effort ${l.rpe}/10: well judged.`))}
+  // what it changed
+  if(l.vd0&&l.vd1){const dv=Math.round((l.vd1-l.vd0)*10)/10;
+    if(dv>=.3){sc+=1.5;plus.push(T(`Leistungsindex steigt von ${fk(l.vd0)} auf ${fk(l.vd1)}: Paces, Zonen und Prognose werden schneller.`,`Performance index rises from ${fk(l.vd0)} to ${fk(l.vd1)}: paces, zones and prediction get faster.`))}
+    else if(dv<=-.3){sc-=.5;minus.push(T(`Leistungsindex sinkt von ${fk(l.vd0)} auf ${fk(l.vd1)}: Paces und Zonen werden ruhiger.`,`Performance index drops from ${fk(l.vd0)} to ${fk(l.vd1)}: paces and zones get calmer.`));tips.push(T('Ein einzelner Test kann täuschen (Tagesform, Wärme, Wind, Strecke). Der Plan lernt mit jedem Training weiter; der nächste Test zeigt, ob es bleibt.','A single test can mislead (form on the day, heat, wind, course). The plan keeps learning from every session; the next test shows whether it holds.'))}
+    else plus.push(T(`Leistungsindex bestätigt (${fk(l.vd1)}): Paces und Zonen passen.`,`Performance index confirmed (${fk(l.vd1)}): paces and zones fit.`))}
+  else if(l.refSet)plus.push(T('Paces und Zonen sind jetzt auf diesen Test abgestimmt.','Paces and zones are now based on this test.'));
+  else tips.push(S.profile.lab?T('Nicht als Referenz übernommen: Deine Laborwerte haben Vorrang.','Not used as reference: your lab values take priority.'):T('Nicht als Referenz übernommen: Es gibt eine neuere Referenz (Rennen oder Test der letzten 8 Wochen).','Not used as reference: there is a more recent reference (race or test within the last 8 weeks).'));
+  if(t30&&S.profile.lthr&&S.profile.lthr.date===l.date)plus.push(T(`Schwellenpuls ${S.profile.lthr.hr} übernommen: Pulszonen sind jetzt persönlich.`,`Threshold HR ${S.profile.lthr.hr} saved: heart-rate zones are now personal.`));
+  if(!full&&l.refSet)tips.push(T('Lief der Test nicht voll? Dann ist der Leistungsindex eher zu tief und die Paces etwas zu ruhig. Wiederhole ihn in 3–4 Wochen ausgeruht.','Was the test not a full effort? Then the index is rather too low and the paces a bit too calm. Repeat it rested in 3–4 weeks.'));
+  const score=clamp(Math.round(sc),1,10);
+  return{score,ty:'test',verdict:score>=8?T('Starker Test: verlässliche Grundlage für Paces und Zonen.','Strong test: a reliable basis for paces and zones.'):score>=6?T('Test brauchbar ausgewertet.','Test analysed and usable.'):T('Test mit Vorbehalt: eher nicht voll ausgereizt.','Test with reservations: probably not a full effort.'),plus,minus,tips,cmp:null,trend:null,hist:[]}}

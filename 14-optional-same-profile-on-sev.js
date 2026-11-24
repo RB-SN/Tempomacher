@@ -42,10 +42,12 @@ function mergeShots(rs){
     else if(lapImg.lapKm&&sumKm&&Math.abs(lapImg.lapKm-sumKm)/sumKm>.08)m.warn.push({k:'lapsum',a:sumKm,b:lapImg.lapKm})}
   const lapsOk=!m.warn.length;void ds;
   if(lapsOk){if(!m.iv&&lapImg.iv)m.iv=lapImg.iv;if(m.dec==null&&lapImg.dec!=null){m.dec=lapImg.dec;m.decNote=lapImg.decNote||null}if(!m.splits&&lapImg.splits)m.splits=lapImg.splits}else{m.iv=order[0].iv||null;m.dec=order[0].dec??null;m.splits=order[0].splits||null}
-  m.rows=Math.max(...rs.map(r=>r.rows));m.kw=(rs.find(r=>r.kw)||{}).kw||null;
+  m.rows=Math.max(...rs.map(r=>r.rows));m.kw=(rs.find(r=>r.kw)||{}).kw||null;m.lapRows=null;
   // interval tables over several screenshots (e.g. Garmin filters «Warm up», «Laufen», «Erholung», «Cool Down»)
-  const LL=rs.map(r=>r.laps).filter(Boolean);if(LL.length&&!m.warn.some(w=>w.k==='dates')){const LA=lapAnalysis(LL);if(LA){m.iv=LA.iv;m.dec=null;
+  const LL=rs.map(r=>r.laps).filter(Boolean);if(LL.length&&!m.warn.some(w=>w.k==='dates')){const LA=lapAnalysis(LL);if(LA){m.iv=LA.iv;m.dec=null;m.lapRows=shotRows(LA.laps);
     if(LA.tot){if(m.km==null)m.km=LA.tot.km;if(m.mov==null||Math.abs(LA.tot.mov-m.mov)<=m.mov*.01)m.mov=LA.tot.mov;if(m.avgHr==null&&LA.tot.hr)m.avgHr=LA.tot.hr;if(m.hrMax==null&&LA.tot.hrMax)m.hrMax=LA.tot.hrMax}}}
+  // single lap table (e.g. manual laps 2 km, 5 km, 1.1 km): the longest one, in order
+  if(!m.lapRows&&!m.warn.length){const lt=rs.map(r=>(r.laps||[]).filter(l=>!l.total&&!l.grp&&l.time&&l.dist)).sort((a,b)=>b.length-a.length)[0];if(lt&&lt.length>=2)m.lapRows=shotRows(lt)}
   // kilometre splits spread over several screenshots: the lap number gives the order (cumulative times are often misread)
   if(!m.iv){const by={};rs.forEach(r=>{(r.laps||[]).forEach(l=>{if(l.num!=null&&!l.total&&!l.grp&&l.pace>=120&&l.pace<=1200&&!by[l.num])by[l.num]=l});(r.splits||[]).forEach(s=>{if(s.n!=null&&s.pace&&!by[s.n])by[s.n]={num:s.n,pace:s.pace,dist:s.dist,hr:s.hr,el:s.el,cum:null}})});
     const ns=Object.keys(by).map(Number).sort((a,b)=>a-b),miss=ns.length?ns[ns.length-1]-ns[0]+1-ns.length:0;
@@ -53,7 +55,7 @@ function mergeShots(rs){
       const ovG=(rs.find(r=>r.rows<=2&&r.gain!=null)||{}).gain;
       const R=elGap(L.map(l=>{const d=l.dist&&l.dist<=md*3?l.dist:md;return{t:l.pace*d,d,hr:l.hr||null,g:l.gap||null,el:l.el}}),ovG);
       const D0=decFrom(R,R.gainKm!=null?R.gainKm:m.gain!=null&&m.km?m.gain/m.km:null);if(D0){m.dec=D0.dec;m.decNote=D0.why;m.decCh=D0.ch||null;m.decSeg=D0.seg?[ns[D0.seg[0]],ns[D0.seg[1]]]:null}
-      if(ns[0]===1&&!miss){const km=Math.round(R.reduce((x,r)=>x+r.d,0)*100)/100,tt=Math.round(R.reduce((x,r)=>x+r.t,0)),hw=R.filter(r=>r.hr);
+      if(ns[0]===1&&!miss){m.lapRows=shotRows(L.map((l,i)=>({dist:R[i].d,time:R[i].t,hr:l.hr})));const km=Math.round(R.reduce((x,r)=>x+r.d,0)*100)/100,tt=Math.round(R.reduce((x,r)=>x+r.t,0)),hw=R.filter(r=>r.hr);
         // complete split table: its totals win unless an overview screenshot agrees closely (then that one is more precise)
         const lc=L[L.length-1].cum,mv=lc&&Math.abs(lc-tt)<=tt*.03?Math.round(lc):tt;
         if(!(m.km!=null&&Math.abs(m.km-km)<=km*.02))m.km=km;if(!(m.mov&&Math.abs(m.mov-mv)<=mv*.02))m.mov=mv;m.avgPace=m.mov&&m.km?Math.round(m.mov/m.km*10)/10:m.avgPace;
@@ -401,7 +403,7 @@ function renderTabs(){
   t.innerHTML=`<div class="in">${tabs.map(([k,l])=>`<button data-act="tab" data-v="${k}" ${ui.tab===k?'aria-current="page"':''}>${ICONS[k]}${l}</button>`).join('')}</div>`;
 }
 function render(){try{renderInner();addInfo($('#app'))}catch(e){showFatal((e&&e.stack)||e)}}
-const APP_VER='4.2.0';
+const APP_VER='4.2.1';
 const footer=()=>`<footer class="copy">© ${new Date().getFullYear()} Ramon Betschart. Alle Rechte vorbehalten.<br><span style="opacity:.7">Version ${APP_VER}</span></footer>`;
 function renderInner(){
   if(S)migrate();

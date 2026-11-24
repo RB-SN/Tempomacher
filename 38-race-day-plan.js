@@ -130,9 +130,9 @@ function saveLf(f){const t=today(),err=m=>({err:m});
     if(x.replaces&&pl)S.logs[x.replaces]={s:JSON.parse(JSON.stringify(pl)),done:false,reason:'alt',altId:x.id,at:Date.now()};
     if(x.type==='test'&&+f.lthr>=120&&+f.lthr<=210){S.profile.lthr={hr:Math.round(+f.lthr),date:f.date}}
     if(x.type==='test'&&x.done&&x.km>=1&&(x.sec||x.pace)&&!S.profile.lab&&(!S.profile.ref||S.profile.ref.src==='test'||!S.profile.ref.date||daysBetween(S.profile.ref.date,f.date)>56)){
-      const C=x.core||{km:x.km,sec:x.sec||Math.round(x.pace*x.km)},sec=C.sec;S.profile.ref={dist:C.km,sec,src:'test',date:f.date};S.adapt.vdotAdj=0;
+      const C=x.core||{km:x.km,sec:x.sec||Math.round(x.pace*x.km)},sec=C.sec;x.vd0=Math.round(vdotOf(S)*10)/10;S.profile.ref={dist:C.km,sec,src:'test',date:f.date};S.adapt.vdotAdj=0;
       S.pbs=(S.pbs||[]).filter(b=>b.id!=='test-'+f.date);S.pbs.push({id:'test-'+f.date,dist:C.km,sec,date:f.date,name:T('Testlauf','Test run')});
-      x.refSet=true;setPrep(false);regenerate()}
+      x.refSet=true;setPrep(false);regenerate();x.vd1=Math.round(vdotOf(S)*10)/10}
     if(x.type==='race'&&x.done&&x.core)raceFromCore(x,f.date);
     return{x,toExtra,f}}
 function renderSheet(){

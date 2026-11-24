@@ -1,5 +1,10 @@
 # Versionsverlauf
 
+## 4.2.1 – November 2026
+
+- **Testlauf mit Note und Feedback:** Bewertet werden die Einteilung (1. gegen 2. Hälfte des Testabschnitts), der Puls (typisch für eine volle Anstrengung über diese Distanz?), die Anstrengung und was der Test verändert hat («Leistungsindex steigt von 42.5 auf 45.3»). Lief der Test nicht voll, sagt die App, dass die Paces eher zu ruhig sind, und schlägt eine Wiederholung vor. Wird der Test nicht als Referenz übernommen (Laborwerte, neuere Referenz), steht der Grund dabei.
+- **Testabschnitt aus Screenshots:** Auch aus Runden-Tabellen (z. B. Runden 2 km · 5 km · 1.1 km) und aus Kilometer-Splits, die über mehrere Screenshots verteilt sind. Ohne geplante Distanz zählt der längste klar schnellere Teil.
+
 ## 4.2.0 – November 2026 · Ein Lauf, mehrere Abschnitte
 
 - **Gesamt und Kernteil:** Ein Lauf hat jetzt zwei Ebenen. Distanz und Dauer gesamt (mit Ein- und Auslaufen) zählen für Umfang und Belastung. Der Kernteil zählt dort, wo es um Leistung geht. Er wird aus dem Plan, den Runden der Uhr oder der Datei erkannt und lässt sich im Formular oder auf der Tempokurve korrigieren.

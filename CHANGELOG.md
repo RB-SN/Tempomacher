@@ -1,5 +1,15 @@
 # Versionsverlauf
 
+## 4.2.0 – November 2026 · Ein Lauf, mehrere Abschnitte
+
+- **Gesamt und Kernteil:** Ein Lauf hat jetzt zwei Ebenen. Distanz und Dauer gesamt (mit Ein- und Auslaufen) zählen für Umfang und Belastung. Der Kernteil zählt dort, wo es um Leistung geht. Er wird aus dem Plan, den Runden der Uhr oder der Datei erkannt und lässt sich im Formular oder auf der Tempokurve korrigieren.
+- **Testlauf:** Zum Beispiel 8.1 km gesamt mit dem 5-km-Testabschnitt in einem Eintrag. Der Testabschnitt setzt Leistungsindex, Bestzeit und Zonen; die 8.1 km zählen für den Wochenumfang. Ohne geplante Testdistanz sucht die App den längsten klar schnelleren Teil (der 30-Minuten-Test nimmt die schnellsten 30 Minuten).
+- **Wettkampf:** Das Rennen wird im Lauf mit Ein- und Auslaufen gefunden (Renndistanz, bevorzugt aus den Runden der Uhr). Die Zeit wird zum Rennresultat mit 1. Hälfte für die Rennauswertung, sofern noch keines eingetragen ist. Wird das offizielle Resultat später eingetragen, bleiben Gesamtdistanz und Datei erhalten.
+- **Langer Lauf mit Endbeschleunigung oder Marathontempo-Teil, progressiver Dauerlauf:** Der schnelle Teil wird am Zieltempo gemessen («Zieltempo getroffen» bzw. zu schnell / zu langsam). Decoupling, Effizienz und Pulsbewertung gelten nur für den lockeren Teil davor. So entsteht kein «2. Hälfte 9 % schneller, nicht bewertet» mehr.
+- **Lauf-Geh-Training:** Laufen und Gehen werden getrennt erkannt (Anzahl Gehpausen, Pace und Puls der Laufabschnitte). Effizienz und Pace zählen nur auf den Laufabschnitten.
+- **Mehrere Dateien für einen Lauf:** «+ Weitere Datei zu diesem Lauf hinzufügen», z. B. wenn die Uhr neu gestartet wurde. Mehrere Laufdateien gleichzeitig gewählt werden ebenfalls zu einem Lauf zusammengefügt. Die Lücke zwischen den Dateien zählt nicht.
+- In den Einträgen zeigt ein Etikett den Kernteil (z. B. «Testabschnitt 5 km · 21:40»), die Gehpausen bzw. die Anzahl Dateien.
+
 ## 4.1.2 – November 2026
 
 - **Strava-Zwischenzeiten werden erkannt** (Km · Tempo · Anstieg · HF): Pace, Puls und Höhendifferenz pro Kilometer, daraus Distanz, Dauer, Ø Puls, Höhenmeter (Näherung: halbe Summe der Höhendifferenzen) und das Decoupling.

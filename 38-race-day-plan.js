@@ -99,8 +99,10 @@ function saveLf(f){const t=today(),err=m=>({err:m});
     else{
       if(!f.type)return err('Bitte die Art des Laufs wählen.');
       if(f.type==='mptest'&&!f.pace)return err(T('Bitte die Ø Pace des Testabschnitts eingeben (ohne Ein- und Auslaufen).','Please enter the average pace of the test section (without warm-up and cool-down).'));
-      if(f.type==='test'&&(f.km===''||(!f.pace&&!f.sec)))return err('Für den Testlauf bitte die Distanz und die Zeit oder Pace des Testabschnitts eingeben (ohne Ein- und Auslaufen).');
+      if(!f.spec)f.spec=coreSpec(f.type,toExtra?null:pl,f.date);const CF=coreFromForm(f);if(CF.err)return err(CF.err);
+      if(f.type==='test'&&!CF.core)return err(T('Für den Testlauf bitte Distanz und Zeit des Testabschnitts eingeben (ohne Ein- und Auslaufen).','For the test run please enter distance and time of the test section (without warm-up and cool-down).'));
       const iv=IVT.has(f.type);let km=f.km===''&&pl?pl.km:pnum(f.km);
+      if(f.km===''&&!pl&&CF.core)km=CF.core.km;if(CF.core&&km<CF.core.km)km=CF.core.km;
       if(!(km>=.5&&km<=150))return err('Bitte die Distanz in km eingeben.');
       const p=parsePace(f.pace);if(Number.isNaN(p)||(p!==null&&(p<120||p>1200)))return err('Pace bitte als min:sek eingeben, z. B. 5:20.');
       let dec=null,hh=null;
@@ -119,6 +121,8 @@ function saveLf(f){const t=today(),err=m=>({err:m});
       x={s:toExtra?{type:'free',title:RTL[f.type],km,zone:'Z2'}:JSON.parse(JSON.stringify(pl)),done:true,type:f.type,km,interval:iv,pace:pp,sec:sec||null,wsec:wsec||null,hr,hrMax:hrMx||null,shoe:f.shoe!=null?f.shoe:shoeDef(),elev:elv,gain:gz!=null?Math.round(gz):null,rpe:+f.rpe,
         reps:iv?reps:null,dec,h:hh,src:f.imp?f.imp.src:'manual',at:Date.now()};if(bk)x.blk=true;
       if(f.imp){x.dur=Math.round((sec||f.imp.mov||0)/60)||null;x.impSum=JSON.parse(JSON.stringify(f.imp))}
+      if(CF.core){x.core=CF.core;if(f.type==='test'||f.type==='race')x.pace=Math.round(CF.core.sec/CF.core.km)}
+      if(f.rw)x.rw=f.rw;if(f.easy&&(f.rw||CF.core&&['fin','mp','prog'].includes(CF.core.kind)))x.easy=f.easy;if(f.imp&&f.imp.files>1)x.files=f.imp.files;
     }
     let keepId=null;
     if(f.editKey){if(f.editKey.startsWith('d:'))delete S.logs[f.editKey.slice(2)];else{keepId=f.editKey.slice(2);const old=S.extra.find(e=>e.id===keepId);if(old&&old.replaces&&S.logs[old.replaces]&&S.logs[old.replaces].reason==='alt')delete S.logs[old.replaces];S.extra=S.extra.filter(e=>e.id!==keepId)}}
@@ -126,9 +130,10 @@ function saveLf(f){const t=today(),err=m=>({err:m});
     if(x.replaces&&pl)S.logs[x.replaces]={s:JSON.parse(JSON.stringify(pl)),done:false,reason:'alt',altId:x.id,at:Date.now()};
     if(x.type==='test'&&+f.lthr>=120&&+f.lthr<=210){S.profile.lthr={hr:Math.round(+f.lthr),date:f.date}}
     if(x.type==='test'&&x.done&&x.km>=1&&(x.sec||x.pace)&&!S.profile.lab&&(!S.profile.ref||S.profile.ref.src==='test'||!S.profile.ref.date||daysBetween(S.profile.ref.date,f.date)>56)){
-      const sec=x.sec||Math.round(x.pace*x.km);S.profile.ref={dist:x.km,sec,src:'test',date:f.date};S.adapt.vdotAdj=0;
-      S.pbs=(S.pbs||[]).filter(b=>b.id!=='test-'+f.date);S.pbs.push({id:'test-'+f.date,dist:x.km,sec,date:f.date,name:'Testlauf'});
+      const C=x.core||{km:x.km,sec:x.sec||Math.round(x.pace*x.km)},sec=C.sec;S.profile.ref={dist:C.km,sec,src:'test',date:f.date};S.adapt.vdotAdj=0;
+      S.pbs=(S.pbs||[]).filter(b=>b.id!=='test-'+f.date);S.pbs.push({id:'test-'+f.date,dist:C.km,sec,date:f.date,name:T('Testlauf','Test run')});
       x.refSet=true;setPrep(false);regenerate()}
+    if(x.type==='race'&&x.done&&x.core)raceFromCore(x,f.date);
     return{x,toExtra,f}}
 function renderSheet(){
   const sh=$('#sheet'),sc=$('#scrim');
@@ -341,8 +346,8 @@ ui.auth={mode:Object.keys(a.users).length?'login':'create',name:'',pw:'',pw2:'',
     l.gain=Math.round(g);l.elev=elevIdx(g);ui.gfOpen=true;save();render();toast(T(`Gespeichert: ${Math.round(g)} hm`,`Saved: ${Math.round(g)} m`))},
   gfAll(){ui.gfAll=true;ui.gfOpen=true;render()},
   theme(el){themeSet(el.dataset.v);render()},
-  raceResOpen(el){const r=S.races.find(x=>x.id===el.dataset.v);if(!r)return;const R=r.res||{},lg=S.logs[r.date],sec=R.sec||(lg&&lg.done&&(lg.sec||(lg.pace?Math.round(lg.pace*logKm(lg)):null)))||null;
-    ui.rr={id:r.id,h:sec?Math.floor(sec/3600)||'':'',m:sec?Math.floor(sec%3600/60):'',s:sec?sec%60:'',hr:R.hr||(lg&&lg.hr)||'',h1:R.h1?fmtTime(R.h1):'',gain:R.gain!=null?R.gain:'',cond:[...(R.cond||[])],rpe:R.rpe||(lg&&lg.rpe)||null};ui.rrErr='';ui.sheet={kind:'raceRes'};renderSheet()},
+  raceResOpen(el){const r=S.races.find(x=>x.id===el.dataset.v);if(!r)return;const R=r.res||{},lg=raceLog(r),sec=R.sec||(lg&&lg.done&&(lg.core&&lg.core.sec||lg.sec||(lg.pace?Math.round(lg.pace*logKm(lg)):null)))||null;
+    ui.rr={id:r.id,h:sec?Math.floor(sec/3600)||'':'',m:sec?Math.floor(sec%3600/60):'',s:sec?sec%60:'',hr:R.hr||(lg&&(lg.core&&lg.core.hr||lg.hr))||'',h1:R.h1?fmtTime(R.h1):lg&&lg.core&&lg.core.h1?fmtTime(lg.core.h1):'',gain:R.gain!=null?R.gain:'',cond:[...(R.cond||[])],rpe:R.rpe||(lg&&lg.rpe)||null};ui.rrErr='';ui.sheet={kind:'raceRes'};renderSheet()},
   rrCond(el){const c=ui.rr.cond,k=el.dataset.v;ui.rr.cond=c.includes(k)?c.filter(x=>x!==k):[...c,k];renderSheet()},
   raceResSave(){const f=ui.rr,r=S.races.find(x=>x.id===f.id);if(!r)return;const err=m=>{ui.rrErr=m;renderSheet()};
     const sec=hms(f.h,f.m,f.s);if(!sec||sec<r.dist*120||sec>r.dist*1200)return err(T('Bitte eine gültige Endzeit eingeben.','Please enter a valid finish time.'));
@@ -352,9 +357,10 @@ ui.auth={mode:Object.keys(a.users).length?'login':'create',name:'',pw:'',pw2:'',
     const pred=r.res&&r.res.pred?r.res.pred:showPred(r.dist)?Math.round(predict(vdotOf(S),r.dist)):null;
     r.res={sec,hr,h1,gain:Number.isNaN(gain)?null:gain,cond:f.cond,rpe,pred,at:Date.now()};
     // also as a training entry (load, entries, milestones)
-    const ps=planSession(r.date),x={s:ps&&ps.type==='race'?ps:{type:'race',title:r.name,km:r.dist,zone:'Z5'},done:true,type:'race',km:r.dist,sec,pace:Math.round(sec/r.dist),hr,rpe,gain:r.res.gain,elev:r.res.gain!=null?elevIdx(r.res.gain):0,src:'race',raceId:r.id,at:Date.now()};
+    const ps=planSession(r.date),lg=raceLog(r);let x={s:ps&&ps.type==='race'?ps:{type:'race',title:r.name,km:r.dist,zone:'Z5'},done:true,type:'race',km:r.dist,sec,pace:Math.round(sec/r.dist),hr,rpe,gain:r.res.gain,elev:r.res.gain!=null?elevIdx(r.res.gain):0,src:'race',raceId:r.id,at:Date.now()};
+    if(lg&&lg.done&&logKm(lg)>r.dist*1.02&&(lg.impSum||lg.core)){x=Object.assign({},lg,{type:'race',pace:Math.round(sec/r.dist),rpe,raceId:r.id,at:Date.now(),core:Object.assign({},lg.core||{},{kind:'race',km:r.dist,sec,hr:hr||null,h1:h1||null,how:lg.core&&lg.core.sec===sec?lg.core.how:'hand'})});delete x.id;delete x.date}
     if(ps&&ps.type==='race'&&(!S.logs[r.date]||S.logs[r.date].raceId===r.id||S.logs[r.date].type==='race'))S.logs[r.date]=x;
-    else{S.extra=(S.extra||[]).filter(e=>e.raceId!==r.id);x.id='race-'+r.id;x.date=r.date;S.extra.push(x)}
+    else{S.extra=(S.extra||[]).filter(e=>e.raceId!==r.id&&e!==lg);x.id='race-'+r.id;x.date=r.date;S.extra.push(x)}
     save();ui.sheet={kind:'raceFb',id:r.id};render()},
   raceResDel(){const r=S.races.find(x=>x.id===ui.rr.id);if(!r)return;delete r.res;if(S.logs[r.date]&&S.logs[r.date].raceId===r.id)delete S.logs[r.date];S.extra=(S.extra||[]).filter(e=>e.raceId!==r.id);save();ui.sheet=null;render()},
   raceFbOpen(el){ui.sheet={kind:'raceFb',id:el.dataset.v};renderSheet()},
@@ -377,7 +383,7 @@ ui.auth={mode:Object.keys(a.users).length?'login':'create',name:'',pw:'',pw2:'',
     ui.lf={mode:runPl||planAlt?'plan':'extra',assign:runPl?A.assign:planAlt?'plan':'extra',date:d,kind:'alt',sport:A.sport||'',sportTxt:'',dur:'',dist:'',gain:'',hr:'',rpe:null,type:'easy',km:'',pace:'',elev:null,reps:'',h1p:'',h1h:'',h2p:'',h2h:''};ui.lfErr='';ui.sheet={kind:'run'};renderSheet()},
   openExtra(){ui.lf={mode:'extra',kind:'run',date:today(),type:'easy',km:'',pace:'',hr:'',elev:0,rpe:null,dur:'',sport:'',reps:'',h1p:'',h1h:'',h2p:'',h2h:''};ui.lfErr='';ui.sheet={kind:'run'};renderSheet()},
   lfSet(el){const v=el.dataset.v,k=el.dataset.k,f=ui.lf;f[k]=isNaN(+v)?v:+v;if(k==='elev'&&f.gain!==''&&f.gain!=null&&elevIdx(+f.gain)!==+v)f.gain='';
-    if(k==='type'&&f.imp)lfPrefill(f);if(k==='sport')ui.lfSportAll=false;
+    if(k==='type'&&f.imp){ui.mkCore=null;lfPrefill(f);partsPrefill(f)}if(k==='sport')ui.lfSportAll=false;
     ui.lfErr='';renderSheet()},
   raceDay(el){ui.sheet={kind:'raceDay',id:el.dataset.v};renderSheet();const sh=$('#sheet');if(sh)sh.scrollTop=0},
   rdPrint(){document.body.classList.add('printing');setTimeout(()=>{window.print();document.body.classList.remove('printing')},50)},
@@ -405,7 +411,7 @@ ui.auth={mode:Object.keys(a.users).length?'login':'create',name:'',pw:'',pw2:'',
   lfSportAll(){ui.lfSportAll=true;renderSheet()},
   lfDate(el){const f=ui.lf,d=el.dataset.v;f.date=d;const pl=planSession(d),logged=S.logs[d];
     if(f.kind==='alt'){const can=pl&&!['rest','race'].includes(pl.type)&&!logged&&d>=S.plan.startMonday;f.mode=can?'plan':'extra';f.assign=can&&pl.type==='alt'?'plan':'extra'}
-    else{const toPlan=pl&&pl.type!=='rest'&&pl.type!=='alt'&&!logged&&d>=S.plan.startMonday;f.mode=toPlan?'plan':'extra';f.assign='plan';if(f.imp){if(f.imp.ser){applyPlanFit(f.imp,toPlan?plannedFor(d)||pl:null);const v=f.imp.iv;f.wsec=v&&v.wt?fmtTime(v.wt):'';f.reps=v&&v.n>1?String(v.n):''}f.type=guessType(f.imp,toPlan?pl:null);lfPrefill(f)}}
+    else{const toPlan=pl&&pl.type!=='rest'&&pl.type!=='alt'&&!logged&&d>=S.plan.startMonday;f.mode=toPlan?'plan':'extra';f.assign='plan';if(f.imp){if(f.imp.ser){applyPlanFit(f.imp,toPlan?plannedFor(d)||pl:null);const v=f.imp.iv;f.wsec=v&&v.wt?fmtTime(v.wt):'';f.reps=v&&v.n>1?String(v.n):''}f.type=guessType(f.imp,toPlan?pl:null);ui.mkCore=null;lfPrefill(f);partsPrefill(f)}}
     ui.lfErr='';renderSheet()},
   importAct(el){ui.altPick=el&&el.dataset&&el.dataset.alt?Object.assign({},ui.altSel):null;ui.impFor=el&&el.dataset&&el.dataset.d||null;
     // first time: a short guide how the file gets onto the phone; afterwards straight to the file picker
@@ -515,7 +521,7 @@ ui.auth={mode:Object.keys(a.users).length?'login':'create',name:'',pw:'',pw2:'',
   pbNew(){ui.pbf={id:null,dist:10,h:'',m:'',s:'',date:today(),name:'',ref:false};ui.pbErr='';ui.sheet={kind:'pb'};renderSheet()},
   pbEdit(el){const p=S.pbs.find(x=>x.id===el.dataset.v);if(!p)return;const r=S.profile.ref;
     ui.pbf={id:p.id,dist:p.dist,h:Math.floor(p.sec/3600)||'',m:Math.floor(p.sec%3600/60),s:Math.round(p.sec%60),date:p.date,name:p.name||'',ref:!!(r&&r.pb===p.id)};ui.pbErr='';ui.sheet={kind:'pb'};renderSheet()},
-  pbFromRace(el){const d=el.dataset.d,l=S.logs[d],km=l.s.km,sec=Math.round(l.pace*km);
+  pbFromRace(el){const d=el.dataset.d,l=S.logs[d],km=l.core?l.core.km:l.s.km,sec=l.core?l.core.sec:Math.round(l.pace*km);
     ui.pbf={id:null,dist:km,h:Math.floor(sec/3600)||'',m:Math.floor(sec%3600/60),s:sec%60,date:d,name:l.s.title,ref:false};ui.pbErr='';ui.sheet={kind:'pb'};renderSheet()},
   pbSet(el){ui.pbf[el.dataset.k]=+el.dataset.v;renderSheet()},
   pbDelAsk(){ui.pbf.del=true;renderSheet()},

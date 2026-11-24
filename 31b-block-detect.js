@@ -1,5 +1,9 @@
 // decoupling line for the import box and the feedback
 function decTxt(a,long){if(!a)return'';const seg=a.decSeg?(a.decSeg[2]==='min'?T(`Minute ${a.decSeg[0]}–${a.decSeg[1]}`,`minute ${a.decSeg[0]}–${a.decSeg[1]}`):T(`km ${a.decSeg[0]}–${a.decSeg[1]}`,`km ${a.decSeg[0]}–${a.decSeg[1]}`)):'';
+  const pt=a.decPart==='easy'?T(' (lockerer Teil)',' (easy part)'):'';
+  if(a.decNote==='short'&&a.decPart==='easy')return T(' · Decoupling nicht bewertet: lockerer Teil kürzer als 45 min',' · decoupling not rated: easy part shorter than 45 min');
+  if(a.decNote==='rw')return T(' · Decoupling bei Lauf-Geh nicht bewertet',' · decoupling not rated for run-walk');
+  if(a.dec!=null&&pt)return` · Decoupling ${fk(a.dec)} %${a.decNote==='gap'?T(' (lockerer Teil, steigungsbereinigt)',' (easy part, grade-adjusted)'):pt}`;
   if(a.dec!=null)return` · Decoupling ${fk(a.dec)} %${a.decNote==='gap'?T(' (steigungsbereinigt)',' (grade-adjusted)'):a.decNote==='seg'?T(` (gleichmässiger Teil, ${seg})`,` (steady part, ${seg})`):''}`;
   if(a.decNote==='prog')return T(` · Decoupling nicht bewertet: 2. Hälfte ${a.decCh||''} % schneller`,` · decoupling not rated: 2nd half ${a.decCh||''} % faster`);
   if(a.decNote==='hilly')return T(' · Decoupling nicht bewertet: zu hügelig ohne steigungsbereinigte Pace (SAP/GAP)',' · decoupling not rated: too hilly without grade-adjusted pace (GAP)');return''}
@@ -97,18 +101,19 @@ function mkHTML(a){
   const Y=v=>Math.round((H-4-(Math.min(hi,Math.max(lo,v))-lo)/(hi-lo||1)*(H-8))*10)/10,X=s=>Math.round(s/T0*W*10)/10;
   const path=pts.map((v,i)=>`${i?'L':'M'}${Math.round(i/N*W*10)/10},${Y(v)}`).join(''),m=ui.mk;
   const old=(a.iv&&a.iv.reps||[]).filter(r=>r.s!=null).map(r=>`<rect x="${X(r.s)}" y="0" width="${Math.max(1,X(r.e)-X(r.s))}" height="${H}" class="mkold"/>`).join('');
-  return`<div class="mk"><div class="flabel">${T('Belastung markieren','Mark the work phase')}</div>
+  const cm=m.core,cl=cm&&ui.lf&&ui.lf.spec?coreL(ui.lf.spec.kind):'';
+  return`<div class="mk"><div class="flabel">${cm?T(`${cl} markieren`,`Mark the ${cl.toLowerCase()}`):T('Belastung markieren','Mark the work phase')}</div>
     <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" class="mksvg" aria-hidden="true">${old}<rect id="mkSel" x="${X(m.a)}" y="0" width="${Math.max(1,X(m.b)-X(m.a))}" height="${H}" class="mksel"/><path d="${path}" class="mkline"/></svg>
     <div class="mkax"><span>0:00</span><span>${T('höher = schneller','higher = faster')}</span><span>${fmtTime(T0)}</span></div>
     <label class="mkr"><span>${T('Start','Start')}</span><input type="range" min="0" max="${T0}" step="5" value="${m.a}" data-mk="a" aria-label="${T('Start der Belastung','Start of the work phase')}"></label>
     <label class="mkr"><span>${T('Ende','End')}</span><input type="range" min="0" max="${T0}" step="5" value="${m.b}" data-mk="b" aria-label="${T('Ende der Belastung','End of the work phase')}"></label>
     <div id="mkInfo" class="mkinfo">${mkStat(S,m.a,m.b)}</div>
-    <p class="hint" style="margin:4px 0 8px">${T('Bei Intervallen den ganzen Bereich vom ersten bis zum letzten Intervall markieren. Die einzelnen Belastungen sucht die App darin selbst.','For intervals mark everything from the first to the last rep. The app finds the single reps inside.')}</p>
-    <div class="mkb"><button type="button" class="btn small primary" data-act="mkApply">${T('Übernehmen','Apply')}</button><button type="button" class="btn small ghost" data-act="mkCancel">${T('Abbrechen','Cancel')}</button>${a.iv?`<button type="button" class="btn small ghost" data-act="mkNone">${T('Kein Block','No block')}</button>`:''}</div></div>`}
+    <p class="hint" style="margin:4px 0 8px">${cm?T('Start und Ende so setzen, dass nur dieser Teil markiert ist, ohne Ein- und Auslaufen.','Set start and end so that only this part is marked, without warm-up and cool-down.'):T('Bei Intervallen den ganzen Bereich vom ersten bis zum letzten Intervall markieren. Die einzelnen Belastungen sucht die App darin selbst.','For intervals mark everything from the first to the last rep. The app finds the single reps inside.')}</p>
+    <div class="mkb"><button type="button" class="btn small primary" data-act="mkApply">${T('Übernehmen','Apply')}</button><button type="button" class="btn small ghost" data-act="mkCancel">${T('Abbrechen','Cancel')}</button>${a.iv&&!cm?`<button type="button" class="btn small ghost" data-act="mkNone">${T('Kein Block','No block')}</button>`:''}</div></div>`}
 function mkBtn(a){return a&&a.ser&&!ui.mk?`<button type="button" class="link" data-act="mkOpen">${a.iv?T('Belastung anpassen','Adjust work phase'):T('Belastung selbst markieren','Mark the work phase yourself')}</button>`:''}
 document.addEventListener('input',e=>{const k=e.target.dataset&&e.target.dataset.mk;if(!k||!ui.mk||!ui.lf||!ui.lf.imp||!ui.lf.imp.ser)return;
   const S=ui.lf.imp.ser,m=ui.mk;m[k]=+e.target.value;
   if(m.b-m.a<60){if(k==='a')m.b=Math.min(S.T,m.a+60);else m.a=Math.max(0,m.b-60);const o=document.querySelector(`[data-mk="${k==='a'?'b':'a'}"]`);if(o)o.value=k==='a'?m.b:m.a}
   const r=document.getElementById('mkSel');if(r){r.setAttribute('x',Math.round(m.a/S.T*3000)/10);r.setAttribute('width',Math.max(1,Math.round((m.b-m.a)/S.T*3000)/10))}
   const i=document.getElementById('mkInfo');if(i)i.innerHTML=mkStat(S,m.a,m.b)});
-function mkAfter(f){const a=f.imp,pl=f.mode==='plan'?plannedFor(f.date):null;f.type=guessType(a,pl);f.wsec=a.iv&&a.iv.wt?fmtTime(a.iv.wt):'';f.reps=a.iv&&a.iv.n>1?String(a.iv.n):'';lfPrefill(f);ui.mk=null;ui.lfErr='';renderSheet()}
+function mkAfter(f){const a=f.imp,pl=f.mode==='plan'?plannedFor(f.date):null;f.type=guessType(a,pl);f.wsec=a.iv&&a.iv.wt?fmtTime(a.iv.wt):'';f.reps=a.iv&&a.iv.n>1?String(a.iv.n):'';lfPrefill(f);partsPrefill(f);ui.mk=null;ui.lfErr='';renderSheet()}

@@ -1,10 +1,16 @@
 // actions for marking the work phase of an imported run (see 31b)
 Object.assign(ACT,{
-  mkOpen(){const a=ui.lf&&ui.lf.imp;if(!a||!a.ser)return;const R=a.iv&&a.iv.reps&&a.iv.reps.filter(r=>r.s!=null);
+  mkOpen(el){const a=ui.lf&&ui.lf.imp;if(!a||!a.ser)return;
+    if(el&&el.dataset&&el.dataset.v==='core'){const c=ui.lf.core;ui.mk=c&&c.a!=null?{a:c.a,b:c.b,core:true}:{a:Math.round(a.ser.T*.2/5)*5,b:Math.round(a.ser.T*.8/5)*5,core:true};renderSheet();return}
+    const R=a.iv&&a.iv.reps&&a.iv.reps.filter(r=>r.s!=null);
     ui.mk=R&&R.length?{a:R[0].s,b:R[R.length-1].e}:{a:Math.round(a.ser.T*.3/5)*5,b:Math.round(a.ser.T*.7/5)*5};renderSheet()},
   mkCancel(){ui.mk=null;renderSheet()},
-  mkApply(){const f=ui.lf,a=f&&f.imp;if(!a||!a.ser||!ui.mk)return;a.iv=markIv(a.ser,ui.mk.a,ui.mk.b);mkAfter(f)},
-  mkNone(){const f=ui.lf,a=f&&f.imp;if(!a)return;a.iv=null;mkAfter(f)}});
+  mkApply(){const f=ui.lf,a=f&&f.imp;if(!a||!a.ser||!ui.mk)return;
+    if(ui.mk.core){const sp=f.spec||{kind:f.type==='race'?'race':'test'},st=serStat(a.ser,ui.mk.a,ui.mk.b),c={kind:sp.kind,how:'mark',a:st.a,b:st.b,km:st.km,sec:st.sec,hr:st.hr};
+      if(sp.km&&(sp.kind==='race'||sp.kind==='test')&&Math.abs(st.km/sp.km-1)<=.05)c.km=sp.km;if(sp.kind==='race')c.h1=halfAt(a.ser,st.a,st.b);
+      ui.mkCore=c;partsPrefill(f);ui.mk=null;ui.lfErr='';renderSheet();return}a.iv=markIv(a.ser,ui.mk.a,ui.mk.b);mkAfter(f)},
+  mkNone(){const f=ui.lf,a=f&&f.imp;if(!a)return;a.iv=null;mkAfter(f)},
+  addFileAct(){addFilePick()}});
 // threshold from the watch (profile)
 Object.assign(ACT,{
   wthrEdit(){const w=S.profile.watchThr;ui.wthr=w?{...w}:{date:today()};ui.wthrErr='';render()},

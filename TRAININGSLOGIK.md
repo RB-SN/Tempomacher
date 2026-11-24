@@ -268,6 +268,16 @@ Unterstützte Formate sind FIT, GPX, TCX und ZIP aus Garmin Connect. Die Interva
 
 Gelten die Abschnitte als Intervalle, zählen nur die Belastungsphasen. Beim Puls werden die ersten bis zu 30 s jeder Wiederholung ausgelassen, weil der Puls verzögert ansteigt.
 
+### Ein Lauf, mehrere Abschnitte
+
+Jeder Lauf hat ein **Gesamt** (Distanz, Dauer, Ø Puls mit Ein- und Auslaufen) und optional einen **Kernteil**. Das Gesamt zählt für Umfang, Belastung, Fitness und Schuhkilometer; der Kernteil dort, wo es um Leistung geht.
+
+- **Erkennung:** Bekannte Distanz (Rennen, geplanter Test, Endbeschleunigung): zuerst Runden der Uhr, die zusammen die Distanz ergeben (±3 %), sonst der schnellste zusammenhängende Abschnitt dieser Länge in der Datei (die Zeit wird auf die offizielle Distanz umgerechnet, weil GPS meist etwas mehr misst). Endbeschleunigung: die letzten km vor dem Ende der Bewegung. 30-Minuten-Test: die weitesten 30 Minuten. Ohne bekannte Distanz: der längste klar schnellere Abschnitt (zwei Tempo-Gruppen, mindestens 10 % Unterschied, Lücken bis 30 s überbrückt, mindestens 4 Minuten); beim Test auf 0.5 km gerundet, wenn er höchstens 3 % daneben liegt. Aus Kilometer-Splits (Screenshots) dasselbe auf ganzen Kilometern.
+- **Test und Rennen:** Der Kernteil setzt Referenz, Bestzeit und damit Leistungsindex und Prognose. Ein Rennen mit Kernteil wird zum Rennresultat (inkl. Zeit der 1. Hälfte), wenn noch keines eingetragen ist.
+- **Endbeschleunigung, Marathontempo-Teil, progressiver Dauerlauf:** Bewertung am Zieltempo: getroffen bei −2.5 % bis +3 %; beim progressiven Dauerlauf zählt nur «nicht schneller als vorgesehen» (−3 %). Pace, Puls, Effizienz und Decoupling werden auf dem lockeren Teil davor gerechnet (Decoupling ab 45 Minuten).
+- **Lauf-Geh:** Zwei Tempo-Gruppen, die langsamere unter 2 m/s; mindestens 3 Gehpausen von je 20 s und zusammen mindestens 6 % der Laufzeit. Pace, Puls und Effizienz gelten für die Laufabschnitte; Decoupling wird nicht bewertet.
+- **Mehrere Dateien:** Werden zu einem Lauf zusammengefügt (Distanzen aneinandergehängt, die Lücke zwischen den Dateien zählt nicht). Dateien, die mehr als 6 Stunden auseinanderliegen, werden nicht verbunden.
+
 ## 10. Formwerte
 
 - **Effizienz-Index** = Geschwindigkeit (km/h) ÷ genutzte Herzfrequenzreserve, also (HF − Ruhepuls) ÷ (HFmax − Ruhepuls). Es gibt drei getrennte Werte, die nur untereinander verglichen werden:

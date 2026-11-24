@@ -37,6 +37,8 @@ function fbFull(l,date){if(!l)return null;const v=(S&&S.updatedAt)||0;if(fbcAt!=
 function rateRun(l,date,shallow){
   if(!l||!l.done||!l.s||l.s.type==='alt')return null;
   const ty=logType(l);if(!ty)return null;
+  // easy part only (long run with a fast finish, run-walk): pace and heart rate of that part; distance stays the total
+  if(l.easy&&l.easy.km&&l.easy.sec&&['easy','recovery','long'].includes(ty))l=Object.assign({},l,{pace:Math.round(l.easy.sec/l.easy.km),hr:l.easy.hr||l.hr,hrMax:null});
   const s=l.s,c=ctxFor(S),plus=[],minus=[],tips=[],km=logKm(l),gap=gapOf(l),E=RPE[ty]||[3,6];
   const easyT=['easy','recovery','long'].includes(ty),qual=['tempo','cruise','mpace','vo2','rp'].includes(ty),lab=(RTL[ty]||'').replace(/-/g,'‑');
   let sc=s.type==='free'?5.5:5,hrDone=false,ea=0,lo=0,bo=0,pos=0;
@@ -46,10 +48,10 @@ function rateRun(l,date,shallow){
     else if(e.st==='tight')tips.push(T('Im Rennen die ersten Kilometer bewusst 3–5 s/km langsamer angehen und erst in der zweiten Hälfte aufs Zieltempo gehen.','In the race, run the first kilometres 3–5 s/km slower on purpose and only settle into goal pace in the second half.'));
     else tips.push(T('Genau so im Rennen: gleichmässig, Verpflegung nach Plan. Das Tempo sitzt.','Exactly like this in the race: even pace, fuelling as planned. The pace is there.'));
     return{score:e.st==='ok'?9:e.st==='tight'?7:5,ty,verdict:e.st==='ok'?T('Zieltempo sitzt. Das gibt Sicherheit für den Renntag.','Goal pace is there. That gives confidence for race day.'):e.st==='tight'?T('Zieltempo knapp machbar: im Rennen kontrolliert starten.','Goal pace just about there: start the race controlled.'):T('Zieltempo sitzt noch nicht.','Goal pace is not there yet.'),plus:e.good,minus:e.flags,tips,cmp:null,trend:null,hist:[]}}
-  if(ty==='test')return{score:null,ty,plus:[T('Testlauf erfasst: daraus werden Pace und Zonen berechnet.','Test run logged: paces and zones are calculated from it.')],minus:[],tips:[],cmp:null,trend:null,hist:[]};
+  if(ty==='test')return{score:null,ty,plus:[T('Testlauf erfasst: daraus werden Pace und Zonen berechnet.','Test run logged: paces and zones are calculated from it.')].concat(l.core?[T(`Testabschnitt ${fk(l.core.km)} km in ${fmtTime(l.core.sec)} (Ø ${pace(l.core.sec/l.core.km)}${l.core.hr?', Ø Puls '+l.core.hr:''}); gesamt ${fk(km)} km für den Umfang.`,`Test section ${fk(l.core.km)} km in ${fmtTime(l.core.sec)} (avg. ${pace(l.core.sec/l.core.km)}${l.core.hr?', avg. HR '+l.core.hr:''}); ${fk(km)} km in total for volume.`)]:[]),minus:[],tips:[],cmp:null,trend:null,hist:[]};
   if(ty==='race'){
-    const r=(S.races||[]).find(x=>x.date===date),sec=l.sec||(l.pace?l.pace*km:null);
-    const goal=r&&r.goal?r.goal:showPred(km)?predict(vdotOf(S),km):null;
+    const r=(S.races||[]).find(x=>x.date===date),rk=l.core?l.core.km:km,sec=l.core?l.core.sec:l.sec||(l.pace?l.pace*km:null);
+    const goal=r&&r.goal?r.goal:showPred(rk)?predict(vdotOf(S),rk):null;
     if(sec&&goal){const q=sec/goal;sc=q<=.98?10:q<=1?9:q<=1.02?8:q<=1.04?7:q<=1.07?6:q<=1.1?5:4;
       (q<=1?plus:minus).push(T(`${fmtTime(sec)} gegenüber ${r&&r.goal?'Zielzeit':'Prognose'} ${fmtTime(goal)} (${pctTxt((q-1)*100)}).`,`${fmtTime(sec)} versus ${r&&r.goal?'goal time':'prediction'} ${fmtTime(goal)} (${pctTxt((q-1)*100)}).`));
       if(q>1.04)tips.push(T('Rennen auswerten: Start zu schnell? Verpflegung? Für das nächste Rennen die ersten Kilometer bewusst kontrolliert angehen.','Review the race: too fast a start? Fuelling? Next time run the first kilometres deliberately controlled.'))}
@@ -102,9 +104,12 @@ function rateRun(l,date,shallow){
     else if(l.rpe>=E[0]&&l.rpe<=E[1]){ea+=.5}
     else if(qual&&l.rpe<E[0]-1)plus.push(T(`Anstrengung nur ${l.rpe}/10: Reserven vorhanden.`,`Effort only ${l.rpe}/10: there is reserve.`))}
   // 5) long runs: aerobic decoupling
-  const dSeg=l.impSum&&l.impSum.decNote==='seg'&&l.impSum.decSeg?T(` (gleichmässiger Teil, ${l.impSum.decSeg[2]==='min'?'Minute':'km'} ${l.impSum.decSeg[0]}–${l.impSum.decSeg[1]})`,` (steady part, ${l.impSum.decSeg[2]==='min'?'minute':'km'} ${l.impSum.decSeg[0]}–${l.impSum.decSeg[1]})`):l.impSum&&l.impSum.decNote==='gap'?T(' (steigungsbereinigt)',' (grade-adjusted)'):'';
+  const dSeg=l.impSum&&l.impSum.decPart==='easy'?T(' (lockerer Teil)',' (easy part)'):l.impSum&&l.impSum.decNote==='seg'&&l.impSum.decSeg?T(` (gleichmässiger Teil, ${l.impSum.decSeg[2]==='min'?'Minute':'km'} ${l.impSum.decSeg[0]}–${l.impSum.decSeg[1]})`,` (steady part, ${l.impSum.decSeg[2]==='min'?'minute':'km'} ${l.impSum.decSeg[0]}–${l.impSum.decSeg[1]})`):l.impSum&&l.impSum.decNote==='gap'?T(' (steigungsbereinigt)',' (grade-adjusted)'):'';
   if(l.dec!=null){pos+=1;if(l.dec<5){ea+=1;plus.push(T(`Decoupling ${fk(l.dec)} %${dSeg}: Die Grundlage trägt über die ganze Distanz.`,`Decoupling ${fk(l.dec)} %${dSeg}: your aerobic base carries the whole distance.`))}
     else if(l.dec>8){lo+=1;minus.push(T(`Decoupling ${fk(l.dec)} %${dSeg}: Der Puls stieg in der zweiten Hälfte stark.`,`Decoupling ${fk(l.dec)} %${dSeg}: heart rate rose strongly in the second half.`));tips.push(T('Langsamer starten und ab 60 min regelmässig trinken und Kohlenhydrate zuführen.','Start slower and drink and take carbohydrates regularly from 60 min.'))}}
+  // 5b) core part (fast finish, marathon-pace part, build-up) and run-walk
+  {const cr=coreRate(l);if(cr){pos+=1;if(cr.ok){ea+=1;plus.push(cr.txt)}else{lo+=1;minus.push(cr.txt)}}
+   if(l.rw)plus.push(T(`Lauf-Geh: ${l.rw.n} Gehpausen; Pace und Puls oben gelten für die Laufabschnitte.`,`Run-walk: ${l.rw.n} walk breaks; pace and heart rate above refer to the running parts.`))}
   // 6) comparison with similar sessions
   let cmp=null,trend=null,hist=[],tab=null;
   if(!shallow){

@@ -308,7 +308,7 @@ async function readActivity(file){
   else{const text=new TextDecoder().decode(buf);if(/<gpx[\s>]/i.test(text)){raw=parseGPX(text);src='gpx'}else if(/TrainingCenterDatabase/i.test(text)){raw=parseTCX(text);src='tcx'}
     else throw new Error('Dieses Dateiformat wird nicht erkannt. Möglich sind FIT, GPX, TCX oder die ZIP-Datei von Garmin.')}
   if(raw.sport&&raw.sport!=='run'){const a=altSummary(raw);a.src=src;return a}
-  const a=analyzeActivity(raw);a.src=src;return a;
+  const a=analyzeActivity(raw);a.src=src;Object.defineProperty(a,'raw',{value:raw,enumerable:false});return a;
 }
 // other sports: totals only (date, distance, moving time, avg heart rate, climbing)
 function altSummary(raw){const R=raw.recs.filter(r=>isFinite(r.t)).sort((a,b)=>a.t-b.t),tt=raw.total;
@@ -373,7 +373,7 @@ function analyzeActivity(raw){
   const splits=[];{let s0=0;for(let k=1;k*1000<=D[T]-D[0];k++){let s=s0;while(s<T&&D[s]-D[0]<k*1000)s++;let h=0,n=0;for(let q=s0;q<s;q++)if(HR[q]){h+=HR[q];n++}splits.push({dist:1,time:s-s0,pace:s-s0,hr:n?Math.round(h/n):null});s0=s}}
   const out={date:iso(new Date(t0*1000)),km:Math.round(dist/100)/10,mov,avgPace:mov?mov/(D[T]-D[0])*1000:null,avgHr:hasHr?Math.round(raw.total.hr||hrS/hrN):null,hrMax:hasHr?(()=>{const h=R.map(r=>r.hr).filter(x=>x>40&&x<235);let mx=0;for(let i=4;i<h.length;i++){const a=(h[i]+h[i-1]+h[i-2]+h[i-3]+h[i-4])/5;if(a>mx)mx=a}return mx?Math.round(mx):null})():null,gain:Math.round(gain||0),iv,dec,decNote,decSeg,decCh,splits:splits.length>=3?splits:null};
   // per-second samples for plan-guided detection and manual marking; not enumerable, so they are never saved or synced
-  Object.defineProperty(out,'ser',{value:{D,HR,ALT,V,T,mov:Uint8Array.from({length:T},(_,s)=>moving(s)?1:0)},enumerable:false});
+  Object.defineProperty(out,'ser',{value:{D,HR,ALT,V,T,mov:Uint8Array.from({length:T},(_,s)=>moving(s)?1:0),laps:L.length>=2?L.map(l=>({a:l.a,b:l.b,d:l.dist})):null},enumerable:false});
   return out
 }
 // longest stretch of splits close to the target pace (race-pace test section): distance, pace, heart rate and both halves
@@ -432,7 +432,7 @@ function guessType(a,pl){
   if(pt&&!IVT.has(pt))return pt;
   return a.km>=15?'long':a.avgPace>c.pc.E[1]*1.05?'recovery':a.avgPace<c.pc.T*1.04?'tempo':'easy';
 }
-function openImport(a){ui.mk=null;ui.lf=lfFromImport(a,ui.impFor);ui.lfErr='';ui.lfAll=false;ui.lfSportAll=false;ui.sheet={kind:'run'};renderSheet()}
+function openImport(a){ui.mk=null;ui.mkCore=null;ui.lf=lfFromImport(a,ui.impFor);ui.lfErr='';ui.lfAll=false;ui.lfSportAll=false;ui.sheet={kind:'run'};renderSheet()}
 function lfFromImport(a,want){
   const ap=ui.altPick;ui.altPick=null;let L;
   if(ap){a.sport=ap.sport||(a.sport&&a.sport!=='run'?a.sport:'other');if(!a.dateFound&&ap.date&&a.src==='screenshot')a.date=ap.date;if(a.mov==null&&a.km&&a.speed)a.mov=Math.round(a.km/a.speed*3600)}
@@ -444,7 +444,7 @@ function lfFromImport(a,want){
   if(a.ser)applyPlanFit(a,toPlan?plannedFor(a.date)||pl:null);
   const type=guessType(a,toPlan?pl:null),iv=IVT.has(type)||BLK.has(type),noWork=iv&&!a.iv;
   L={sec:a.mov?fmtTime(a.mov):'',wsec:a.iv&&a.iv.wt?fmtTime(a.iv.wt):'',mode:toPlan?'plan':'extra',assign:'plan',date:a.date,kind:'run',type,km:a.km?String(a.km):'',pace:noWork?'':(iv&&a.iv?a.iv.pace:a.avgPace)?fmtPace(iv&&a.iv?a.iv.pace:a.avgPace):'',hr:noWork?'':(iv&&a.iv?a.iv.hr:a.avgHr)||'',elev:a.gain!=null?elevIdx(a.gain):null,gain:a.gain!=null?String(a.gain):'',hrMax:a.hrMax?String(a.hrMax):'',rpe:null,dur:'',sport:'',imp:a,h1p:'',h1h:'',h2p:'',h2h:''};
-  if(type==='mptest')lfPrefill(L);
+  if(type==='mptest')lfPrefill(L);partsPrefill(L);
   if(want&&a.dateFound&&a.date!==want&&want<=today())L.dateAsk={plan:want,found:a.date};
   return L}
 // values from the import for the chosen run type (intervals: work phases; race-pace test: the test section from the splits)

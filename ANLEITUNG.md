@@ -31,7 +31,7 @@ Unter **Profil → Dein Ziel → Ändern** wechselst du zwischen persönlichem Z
 - Wähle bei der Lauferfahrung **Keine** und lass die Referenzzeit leer.
 - Der Plan beginnt mit **Lauf-Geh-Training** (z. B. 1 min laufen, 1.5 min gehen). Läuft eine Woche gut, wird die nächste Woche eine Stufe länger gelaufen, bis du 20 min und mehr am Stück schaffst.
 - Lauf **nach Gefühl**: so locker, dass du dich unterhalten kannst. Die angezeigte Pace ist nur ein grober Richtwert.
-- Nach ca. 5 Wochen steht ein **Testlauf** im Plan. Trag dort nur den Testabschnitt ein (Distanz und Zeit). Danach sind Pace und Zonen auf dich abgestimmt.
+- Nach ca. 5 Wochen steht ein **Testlauf** im Plan. Lade den ganzen Lauf hoch oder trag Gesamt und Testabschnitt ein (Distanz und Zeit). Pace und Zonen werden aus dem Testabschnitt berechnet.
 - Bei gesundheitlichen Vorbelastungen vor dem Start ärztlich abklären lassen.
 
 ## Die fünf Bereiche
@@ -180,6 +180,14 @@ Ist dein Profil nur auf diesem Gerät gespeichert, erinnert dich die Übersicht 
 ## Daten
 
 Profile ohne Online-Speicher liegen nur im Browser des Geräts. Wenn du Browserdaten löschst, den privaten Modus nutzt oder das Gerät wechselst, sind sie dort nicht vorhanden. Profile mit Online-Speicher sind zusätzlich verschlüsselt online gesichert und nach der Anmeldung auf jedem Gerät verfügbar.
+
+## Ein Lauf, mehrere Abschnitte
+
+- **Gesamt** (mit Ein- und Auslaufen) zählt für Umfang und Belastung, der **Kernteil** für die Leistung.
+- **Testlauf und Wettkampf:** Lade einfach den ganzen Lauf hoch. Die App findet den Testabschnitt bzw. das Rennen (aus dem Plan, den Runden der Uhr oder der Tempokurve) und zeigt ihn im Kasten «Testabschnitt» bzw. «Wettkampf». Stimmt etwas nicht: Werte im Kasten ändern oder «Auf der Tempokurve anpassen». Von Hand: Distanz und Dauer gesamt, dazu Distanz und Zeit des Kernteils.
+- **Langer Lauf mit Endbeschleunigung oder Marathontempo-Teil, progressiver Dauerlauf:** Der schnelle Teil wird am Zieltempo gemessen; Decoupling, Effizienz und Puls gelten für den lockeren Teil.
+- **Lauf-Geh-Training:** Laufen und Gehen werden getrennt ausgewertet.
+- **Uhr neu gestartet?** Nach dem Import der ersten Datei «+ Weitere Datei zu diesem Lauf hinzufügen» tippen, oder beide Dateien gleichzeitig auswählen.
 
 ## Datei vom Handy importieren
 

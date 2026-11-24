@@ -719,3 +719,9 @@ nav.tabs button[aria-current="page"] svg{background:var(--hot-soft)}
   .racegrid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px!important;align-items:start}
   .racegrid>p{grid-column:1/-1}
 }
+/* one run in parts: core part box in the log form */
+.corebox{background:var(--soft);border-radius:var(--r);padding:12px 14px;gap:8px}
+.corebox>.flabel{font-weight:600}
+.grid3{display:grid;grid-template-columns:1fr 1.25fr 1fr;gap:10px}
+.grid3 .field{min-width:0}
+.grid3 .input{width:100%}

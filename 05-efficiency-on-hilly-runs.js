@@ -7,7 +7,7 @@
 const hillG=l=>{const km=logKm(l),g=gainOf(l);return km&&g!=null?g/km:null};
 function hillFactor(l,P){const g=hillG(l);if(g==null||g<5)return 1;if(g>80)return null;return 1+.00005*g*g+Math.min(.04,.0012*(g-5))*(P==null?hillP():P)}
 const effSpeed=l=>!isIv(l)&&!isBlk(l)&&logType(l)!=='mptest'&&l.sec&&logKm(l)?logKm(l)*3600/l.sec:3600/l.pace; // km/h, as exact as possible
-function effRaw(l){if(!l||!l.done||!l.pace||!l.hr||effGroup(l)!=='base')return null;const ty=logType(l);
+function effRaw(l){l=effL(l);if(!l||!l.done||!l.pace||!l.hr||effGroup(l)!=='base')return null;const ty=logType(l);
   if(ty==='race'||ty==='hills'||isAlt(l))return null;const p=S.profile,mx=hrMax(p),rs=hrRest(p);if(l.hr<=rs+5||l.hr>mx)return null;
   return effSpeed(l)/((l.hr-rs)/(mx-rs))}
 // personal factor for the heart-rate part: from at least 5 flat (< 10 m/km) and 5 hilly (20–80 m/km) easy runs of the last 180 days
@@ -31,7 +31,7 @@ function effBlk(l){const g=effGroup(l);if((g!=='thr'&&g!=='mp')||!l.done||!l.pac
   const p=S.profile,mx=hrMax(p),rs=hrRest(p);if(l.hr<=rs+5||l.hr>mx)return null;return 3600/l.pace/((l.hr-rs)/(mx-rs))}
 const effAny=l=>effOf(l)||effBlk(l);
 const effName=g=>g==='thr'?T('Schwellen-Effizienz','Threshold efficiency'):g==='mp'?T('Marathontempo-Effizienz','Marathon-pace efficiency'):T('Effizienz','Efficiency');
-function effOf(l){
+function effOf(l){l=effL(l);
   if(!l||!l.done||!l.pace||!l.hr||effGroup(l)!=='base')return null;const ty=logType(l);
   if(ty==='race'||ty==='hills'||(l.s&&l.s.type==='alt'))return null;
   const p=S.profile,mx=hrMax(p),rs=hrRest(p);if(l.hr<=rs+5||l.hr>mx)return null;

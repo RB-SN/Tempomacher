@@ -32,7 +32,7 @@ function analyze(l){
     if(l.hr>s.hr[1]+5){strain+=.5;out.msgs.push(`Puls ${l.hr} lag über dem Zielbereich (${s.hr[0]}–${s.hr[1]}). Hitze, Schlafmangel oder Müdigkeit?`)}
     else if(!qual&&l.hr>=s.hr[0]-3&&l.hr<=s.hr[1]+5)out.msgs.push('Puls im Zielbereich.');
   }
-  if(ty==='test'&&l.refSet)out.msgs.push(`Testlauf ausgewertet: ${fk(l.km)} km in ${fmtTime(l.sec||l.pace*l.km)}. Pace und Zonen sind jetzt darauf abgestimmt.`);
+  if(ty==='test'&&l.refSet){const C=l.core||{km:l.km,sec:l.sec||l.pace*l.km};out.msgs.push(T(`Testlauf ausgewertet: ${fk(C.km)} km in ${fmtTime(C.sec)}. Pace und Zonen sind jetzt darauf abgestimmt.`,`Test run analysed: ${fk(C.km)} km in ${fmtTime(C.sec)}. Paces and zones are now based on it.`))}
   if(l.dec!=null)out.msgs.push(`Decoupling ${fk(+l.dec.toFixed(1))} %: ${l.dec<5?'unter 5 %, deine aerobe Grundlage trägt über die ganze Distanz.':'der Puls stieg in der zweiten Hälfte deutlich an. Häufige Gründe: zu schneller Start, Wärme, zu wenig getrunken, oder die Grundlage für diese Länge braucht noch Zeit.'}`);
   const ef=effAny(l),eg=effGroup(l);if(ef)out.msgs.push(`${eg==='base'?'Effizienz-Index':effName(eg)} ${f2(ef)}${eg!=='base'?' (nur Belastung)':''}.`);
   if(l.rpe>E[1]+1)out.msgs.push(`Anstrengung ${l.rpe}/10 ist höher als für diese Einheit erwartet (${E[0]}–${E[1]}).`);

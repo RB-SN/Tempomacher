@@ -26,7 +26,7 @@ async function importFiles(files){if(!files.length||!S)return;
   const imgs=files.filter(isImg),file=files.find(f=>!isImg(f));ui.impShot=!!imgs.length&&!file;
   (ui.thumbs||[]).forEach(u=>{try{URL.revokeObjectURL(u)}catch(x){}});ui.thumbs=imgs.length&&!file?imgs.slice(0,4).map(f=>URL.createObjectURL(f)):null;
   ui.sheet={kind:'busy'};renderSheet();
-  try{const a=imgs.length&&!file?await readShots(imgs):await readActivity(file);
+  try{const a=imgs.length&&!file?await readShots(imgs):await readRuns(files.filter(f=>!isImg(f)));
     if(a.batch){openBatch(a.batch,a.lost);return}
     if(a.date>today())throw new Error('Das Datum der Aktivität liegt in der Zukunft.');openImport(a)}
   catch(err){ui.impErr=(err&&err.message)||'Die Datei konnte nicht gelesen werden.';ui.sheet={kind:'impErr'};renderSheet()}}

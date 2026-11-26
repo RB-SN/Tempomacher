@@ -11,6 +11,7 @@ Object.assign(ACT,{
       ui.mkCore=c;partsPrefill(f);ui.mk=null;ui.lfErr='';renderSheet();return}a.iv=markIv(a.ser,ui.mk.a,ui.mk.b);mkAfter(f)},
   mkNone(){const f=ui.lf,a=f&&f.imp;if(!a)return;a.iv=null;mkAfter(f)},
   addFileAct(){addFilePick()},
+  lfToRun(){toRunForm()},
   strTog(el){const d=el.dataset.d;if(!d||d>today())return;S.strDone=S.strDone||{};const on=!(S.strDone[d]&&S.strDone[d].v);S.strDone[d]={v:on?1:0,at:Date.now()};save();render()}});
 // threshold from the watch (profile)
 Object.assign(ACT,{

@@ -67,10 +67,10 @@ function weekLane(mon,title){
       <span class="dn">${DOWS[i]}</span><span class="dd">${pd(d).getDate()}</span><span class="kk">${kk}</span></button>`}).join('')}</div></div>`;
 }
 function dayRow(d,s){
-  const l=S.logs[d],t=today();
+  const l=S.logs[d],t=today();if(d===t&&!l){const e=effective(d);if(e.s&&e.s.adjusted)s=e.s}
   const z=s.type==='rest'?'':`<span class="zbar" style="background:var(--${s.type==='race'?'hot':s.type==='alt'?'z1':s.zone.toLowerCase()})"></span>`;
   return`<button class="li ${d===t?'isToday':''}${s.optional&&!l?' optl':''}" data-act="openDay" data-d="${d}"><span class="dt">${DOWS[dow(d)]}<b>${pd(d).getDate()}</b></span>
-    <span class="t">${z}${esc(s.title)}<small>${s.tag?esc(s.tag)+' · ':''}${s.type==='rest'?'':s.type==='alt'?'Alternativ, freiwillig':ZONES[s.zone].n}${l?(l.done?' · erledigt ✓':' · nicht durchgeführt'):''}</small></span>
+    <span class="t">${z}${esc(s.title)}${s.adjusted&&!l?`<span class="pill n" style="margin-left:6px">${T('angepasst','adjusted')}</span>`:''}<small>${s.tag?esc(s.tag)+' · ':''}${s.type==='rest'?'':s.type==='alt'?'Alternativ, freiwillig':ZONES[s.zone].n}${l?(l.done?' · erledigt ✓':' · nicht durchgeführt'):''}</small></span>
     <span class="k">${s.type==='rest'?'':s.type==='alt'?(s.dur||45)+"'":fk(s.km)+' km'}</span></button>`;
 }
 function rwBanner(){const n=S.adapt.rwNote;if(!n||n.seen)return'';return`<div class="banner up"><div class="spread"><div class="verdict">Lauf-Geh-Training</div><button class="link" data-act="dismissRw">OK</button></div><p style="margin:6px 0 0;font-size:14.5px">${esc(n.text)}</p></div>`}

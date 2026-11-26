@@ -432,10 +432,10 @@ function guessType(a,pl){
   if(pt&&!IVT.has(pt))return pt;
   return a.km>=15?'long':a.avgPace>c.pc.E[1]*1.05?'recovery':a.avgPace<c.pc.T*1.04?'tempo':'easy';
 }
-function openImport(a){ui.mk=null;ui.mkCore=null;ui.lf=lfFromImport(a,ui.impFor);ui.lfErr='';ui.lfAll=false;ui.lfSportAll=false;ui.sheet={kind:'run'};renderSheet()}
+function openImport(a){ui.mk=null;ui.mkCore=null;ui.lf=lfFromImport(a,ui.impFor);runOnAltMark(ui.lf);ui.lfErr='';ui.lfAll=false;ui.lfSportAll=false;ui.sheet={kind:'run'};renderSheet()}
 function lfFromImport(a,want){
   const ap=ui.altPick;ui.altPick=null;let L;
-  if(ap){a.sport=ap.sport||(a.sport&&a.sport!=='run'?a.sport:'other');if(!a.dateFound&&ap.date&&a.src==='screenshot')a.date=ap.date;if(a.mov==null&&a.km&&a.speed)a.mov=Math.round(a.km/a.speed*3600)}
+  if(ap){a.sport=ap.sport||a.sport||(a.raw?'run':'other');if(!a.dateFound&&ap.date&&a.src==='screenshot')a.date=ap.date;if(a.mov==null&&a.km&&a.speed)a.mov=Math.round(a.km/a.speed*3600)}
   if(a.sport&&a.sport!=='run'){const pl=planSession(a.date),logged=S.logs[a.date],can=pl&&!['rest','race'].includes(pl.type)&&!logged&&a.date>=S.plan.startMonday;
     ui.lf={mode:can?'plan':'extra',assign:can&&pl.type==='alt'?'plan':can&&ap&&ap.assign==='replace'&&ap.date===a.date?'replace':'extra',date:a.date,kind:'alt',sport:a.sport,sportTxt:'',dur:a.mov?fmtTime(a.mov).replace(/:\d\d$/,''):'',dist:a.km!=null?String(a.km):'',distm:a.km!=null?String(Math.round(a.km*1000)):'',spd:a.speed?String(a.speed):'',env:'pool',pool:25,gain:a.gain!=null?String(a.gain):'',hr:a.avgHr||'',rpe:null,imp:a,type:'easy',km:'',pace:'',elev:null,reps:'',h1p:'',h1h:'',h2p:'',h2h:''};
     L=ui.lf;if(want&&a.dateFound&&a.date!==want&&want<=today())L.dateAsk={plan:want,found:a.date};return L}

@@ -7,7 +7,7 @@ function editForm(l,base){const sc=logSec(l),wk=logWork(l);return Object.assign(
 function plannedFor(date){return(S.logs[date]&&S.logs[date].s)||(date===today()?effective(date).s:planSession(date))}
 function runForm(){
   const f=ui.lf,t=today(),pl=f.mode==='plan'?plannedFor(f.date):null,toExtra=f.mode==='extra'||f.assign==='extra';
-  const alt=f.kind==='alt'||(!toExtra&&pl&&pl.type==='alt'),iv=IVT.has(f.type),bk=BLK.has(f.type),a=f.imp;
+  const alt=f.kind==='alt'||(!toExtra&&pl&&pl.type==='alt'&&!f.runOnAlt),iv=IVT.has(f.type),bk=BLK.has(f.type),a=f.imp;
   f.spec=alt?null:coreSpec(f.type,toExtra?null:pl,f.date);if(f.ckm==null&&f.spec&&f.spec.km&&(f.spec.kind==='race'||f.spec.kind==='test'))f.ckm=String(f.spec.km);
   const head=f.mode==='plan'?`${fdate(f.date)} · Plan: ${esc(pl.title)}${pl.type!=='alt'?' · '+fk(pl.km)+' km':''}`:a?`${fdate(f.date)} · ${T('zusätzliches Training','extra training')}`:'Zusätzliches Training';
   const pa=f.dateAsk&&planSession(f.dateAsk.plan),dask=f.dateAsk?`<div class="adj dask"><b>${T(`Die Aktivität ist vom ${fdate(f.dateAsk.found)}`,`The activity is from ${fdate(f.dateAsk.found)}`)}</b> – ${T(`geöffnet hattest du ${fdate(f.dateAsk.plan)}${pa&&pa.type!=='rest'?` («${esc(pa.title)}»)`:''}. Wo soll sie zählen?`,`You had opened ${fdate(f.dateAsk.plan)}${pa&&pa.type!=='rest'?` («${esc(pa.title)}»)`:''}. Where should it count?`)}
@@ -23,7 +23,7 @@ function runForm(){
     <div class="field"><label for="lfDate">Datum</label><input class="input" id="lfDate" type="date" max="${t}" value="${esc(f.date)}" data-bind="lf.date"></div>`:'');
   let body;
   if(alt){const runPl=f.mode==='plan'&&pl&&pl.type!=='alt';
-    body=`<div class="field"><span class="flabel">${T('Sportart','Sport')}</span><div class="seg">${(f.sport&&!ui.lfSportAll?[f.sport]:['bike','mtb','indoor','xcski','skitour','swim','aqua','elliptical','row','hike','hyrox','other']).map(k=>opt('lfSet','sport',k,SP(k).name,f.sport||'')).join('')}${f.sport&&!ui.lfSportAll?`<button type="button" class="opt more" data-act="lfSportAll">${T('Andere Sportart …','Other sport …')}</button>`:''}</div>
+    body=`<div class="field"><span class="flabel">${T('Sportart','Sport')}</span><div class="seg">${opt('lfToRun','k','run',T('Laufen','Running'),'')}${(f.sport&&!ui.lfSportAll?[f.sport]:['bike','mtb','indoor','xcski','skitour','swim','aqua','elliptical','row','hike','hyrox','other']).map(k=>opt('lfSet','sport',k,SP(k).name,f.sport||'')).join('')}${f.sport&&!ui.lfSportAll?`<button type="button" class="opt more" data-act="lfSportAll">${T('Andere Sportart …','Other sport …')}</button>`:''}</div>
       ${f.sport==='other'?`<input class="input" id="lfSport" style="margin-top:8px" placeholder="${T('z. B. Tennis','e.g. tennis')}" value="${esc(f.sportTxt||'')}" data-bind="lf.sportTxt">`:''}</div>
     ${runPl?`<div class="field"><span class="flabel">${T('Speichern als','Save as')}</span><div class="seg">${opt('lfSet','assign','extra',T('Zusätzlich','In addition'),f.assign==='replace'?'':'extra')}${opt('lfSet','assign','replace',T(`Statt «${pl.title}»`,`Instead of «${pl.title}»`),f.assign)}</div></div>`:''}
     ${f.sport?altFields(f):`<p class="hint" style="margin:0">${T('Wähle die Sportart, dann erscheinen die passenden Felder.','Choose the sport; the matching fields appear.')}</p>`}

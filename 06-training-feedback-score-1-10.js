@@ -108,8 +108,8 @@ function rateRun(l,date,shallow){
   const dSeg=l.impSum&&l.impSum.decPart==='easy'?T(' (lockerer Teil)',' (easy part)'):l.impSum&&l.impSum.decNote==='seg'&&l.impSum.decSeg?T(` (gleichmässiger Teil, ${l.impSum.decSeg[2]==='min'?'Minute':'km'} ${l.impSum.decSeg[0]}–${l.impSum.decSeg[1]})`,` (steady part, ${l.impSum.decSeg[2]==='min'?'minute':'km'} ${l.impSum.decSeg[0]}–${l.impSum.decSeg[1]})`):l.impSum&&l.impSum.decNote==='gap'?T(' (steigungsbereinigt)',' (grade-adjusted)'):'';
   if(l.dec!=null){pos+=1;if(l.dec<5){ea+=1;plus.push(T(`Decoupling ${fk(l.dec)} %${dSeg}: Die Grundlage trägt über die ganze Distanz.`,`Decoupling ${fk(l.dec)} %${dSeg}: your aerobic base carries the whole distance.`))}
     else if(l.dec>8){lo+=1;minus.push(T(`Decoupling ${fk(l.dec)} %${dSeg}: Der Puls stieg in der zweiten Hälfte stark.`,`Decoupling ${fk(l.dec)} %${dSeg}: heart rate rose strongly in the second half.`));tips.push(T('Langsamer starten und ab 60 min regelmässig trinken und Kohlenhydrate zuführen.','Start slower and drink and take carbohydrates regularly from 60 min.'))}}
-  // 5b) core part (fast finish, marathon-pace part, build-up) and run-walk
-  {const cr=coreRate(l);if(cr){pos+=1;if(cr.ok){ea+=1;plus.push(cr.txt)}else{lo+=1;minus.push(cr.txt)}}
+  // 5b) core part (fast finish, marathon-pace part, build-up) and run-walk; run instead of the planned cross-training
+  {if(s&&s.swapAlt)tips.push(T('Vorgesehen war Alternativtraining. Ein Lauf ist in Ordnung, wenn er wirklich locker war und nichts schmerzt; halte die nächsten 1–2 Tage ebenfalls locker.','Cross-training was planned. A run is fine if it was truly easy and nothing hurts; keep the next 1–2 days easy as well.'));const cr=coreRate(l);if(cr){pos+=1;if(cr.ok){ea+=1;plus.push(cr.txt)}else{lo+=1;minus.push(cr.txt)}}
    if(l.rw)plus.push(T(`Lauf-Geh: ${l.rw.n} Gehpausen; Pace und Puls oben gelten für die Laufabschnitte.`,`Run-walk: ${l.rw.n} walk breaks; pace and heart rate above refer to the running parts.`))}
   // 6) comparison with similar sessions
   let cmp=null,trend=null,hist=[],tab=null;

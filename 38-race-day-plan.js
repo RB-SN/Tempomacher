@@ -76,7 +76,7 @@ function saveLf(f){const t=today(),err=m=>({err:m});
     const hr=checkHr(f.hr);if(Number.isNaN(hr))return err('Herzfrequenz zwischen 60 und 230 eingeben.');
     const hrMx=checkHr(f.hrMax);if(Number.isNaN(hrMx)||(hrMx&&hr&&hrMx<hr))return err(T('Max. Puls zwischen 60 und 230 und nicht tiefer als der Ø Puls.','Max heart rate between 60 and 230 and not below the average.'));
     let x;
-    if(f.kind==='alt'||(!toExtra&&pl&&pl.type==='alt')){
+    if(f.kind==='alt'||(!toExtra&&pl&&pl.type==='alt'&&!f.runOnAlt)){
       const dur=altDurMin(f.dur);
       if(!f.sport)return err(T('Bitte die Sportart wählen.','Please choose the sport.'));
       if(!dur||dur<5||dur>900)return err(T('Bitte die Dauer eingeben (Minuten oder h:mm).','Please enter the duration (minutes or h:mm).'));
@@ -118,7 +118,7 @@ function saveLf(f){const t=today(),err=m=>({err:m});
       let pp=p;if(pp==null&&!iv&&!bk&&sec&&km)pp=Math.round(sec/km);
       const gz=iv||f.gain===''||f.gain==null?null:pnum(f.gain);if(gz!=null&&(Number.isNaN(gz)||gz<0||gz>6000))return err(T('Höhenmeter bitte als Zahl zwischen 0 und 6000 eingeben, oder das Feld leer lassen.','Please enter climbing as a number between 0 and 6000, or leave the field empty.'));
       const elv=iv?null:gz!=null?elevIdx(gz):f.elev;
-      x={s:toExtra?{type:'free',title:RTL[f.type],km,zone:'Z2'}:JSON.parse(JSON.stringify(pl)),done:true,type:f.type,km,interval:iv,pace:pp,sec:sec||null,wsec:wsec||null,hr,hrMax:hrMx||null,shoe:f.shoe!=null?f.shoe:shoeDef(),elev:elv,gain:gz!=null?Math.round(gz):null,rpe:+f.rpe,
+      x={s:toExtra?{type:'free',title:RTL[f.type],km,zone:'Z2'}:pl.type==='alt'?runSub(f.date,km):JSON.parse(JSON.stringify(pl)),done:true,type:f.type,km,interval:iv,pace:pp,sec:sec||null,wsec:wsec||null,hr,hrMax:hrMx||null,shoe:f.shoe!=null?f.shoe:shoeDef(),elev:elv,gain:gz!=null?Math.round(gz):null,rpe:+f.rpe,
         reps:iv?reps:null,dec,h:hh,src:f.imp?f.imp.src:'manual',at:Date.now()};if(bk)x.blk=true;
       if(f.imp){x.dur=Math.round((sec||f.imp.mov||0)/60)||null;x.impSum=JSON.parse(JSON.stringify(f.imp))}
       if(CF.core){x.core=CF.core;if(f.type==='test'||f.type==='race')x.pace=Math.round(CF.core.sec/CF.core.km)}

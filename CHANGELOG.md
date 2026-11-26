@@ -1,5 +1,10 @@
 # Versionsverlauf
 
+## 4.2.4 – November 2026
+
+- **Laufen statt Alternativtraining:** Steht Alternativtraining im Plan (geplant oder vom Plan angepasst, z. B. wegen hoher Belastung) und du warst trotzdem laufen, lässt sich der Lauf jetzt normal erfassen. Eine Lauf-Datei bleibt ein Lauf, auch wenn du über «Alternativtraining erfassen» importierst. Im Alternativ-Formular steht neu «Laufen» als erste Sportart und macht daraus ein Lauf-Formular, mit Distanz, Dauer und Puls übernommen. Der Lauf zählt als Einheit dieses Tages (mit Feedback und Hinweis, die nächsten Tage locker zu halten).
+- **Training-Liste:** Ist die heutige Einheit angepasst (Belastung, Morgen-Check), zeigt die Liste die angepasste Einheit mit dem Etikett «angepasst», wie die Übersicht. Bisher stand dort noch die ursprüngliche.
+
 ## 4.2.3 – November 2026
 
 - **Krafttraining abhaken:** Der Block «Plus: Kraft» hat ein Häkchen «Kraft erledigt?». Es wird zwischen den Geräten synchronisiert und in den Meilensteinen gezählt (5, 10, 25, 50, 100 Krafteinheiten).

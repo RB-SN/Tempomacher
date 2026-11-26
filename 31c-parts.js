@@ -213,3 +213,12 @@ function strTick(date){if(!date||date>today())return'';const on=strIsDone(date);
 const MS_STR=[5,10,25,50,100];
 function strRow(row,chip){const n=Object.values(S.strDone||{}).filter(x=>x&&x.v).length;if(!n&&S.profile.strength===false)return'';const nx=MS_STR.find(x=>n<x);
   return row(T('Krafttraining','Strength sessions'),MS_STR.map(x=>chip(n>=x,x)).join(''),n?nx?T(`${n} erledigt, noch ${nx-n} bis ${nx}`,`${n} done, ${nx-n} to go until ${nx}`):'':T('Hake den Block «Plus: Kraft» ab, wenn du ihn gemacht hast.','Tick off the «Plus: strength» block when you have done it.'))}
+// ---- a run on a day planned as cross-training (or adjusted to it): it still counts as the run of that day ----
+function runOnAltMark(f){if(!f||f.kind==='alt'||f.mode!=='plan')return;const p=plannedFor(f.date);if(p&&p.type==='alt'){f.runOnAlt=true;if(!f.type||f.type==='alt')f.type='easy'}}
+function runSub(date,km){const b=date===today()?effective(date).base:planSession(date);
+  if(b&&!['alt','rest','race'].includes(b.type))return Object.assign(JSON.parse(JSON.stringify(b)),{swapAlt:true});
+  return Object.assign(W.easy(ctxFor(S),km||6),{title:T('Lockerer Lauf statt Alternativtraining','Easy run instead of cross-training'),swapAlt:true})}
+function toRunForm(){const f=ui.lf;if(!f)return;const a=f.imp;
+  if(a){a.sport='run';const keep={date:f.date,rpe:f.rpe};ui.lf=lfFromImport(a,f.mode==='plan'?f.date:null);Object.assign(ui.lf,keep);runOnAltMark(ui.lf);if(f.mode==='plan'&&ui.lf.mode!=='plan'){ui.lf.mode='plan';runOnAltMark(ui.lf)}}
+  else{const m=altDurMin(f.dur);ui.lf=Object.assign({},f,{kind:'run',type:'easy',km:f.dist||'',sec:m?fmtTime(Math.round(m*60)):'',pace:'',hr:f.hr||'',elev:0,sport:''});runOnAltMark(ui.lf)}
+  ui.lfErr='';renderSheet()}
